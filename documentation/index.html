@@ -1,0 +1,270 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<head lang="en" xmlns="http://www.w3.org/1999/html">
+	<meta http-equiv="content-type" content="text/html;charset=utf-8">
+	<title>Documentation</title>
+	<!-- Framework CSS -->
+	<link rel="stylesheet" href="assets/blueprint-css/screen.css" type="text/css" media="screen, projection">
+	<link rel="stylesheet" href="assets/blueprint-css/print.css" type="text/css" media="print">
+	<!--[if lt IE 8]><link rel="stylesheet" href="assets/blueprint-css/ie.css" type="text/css" media="screen, projection"><![endif]-->
+	<link rel="stylesheet" href="assets/blueprint-css/plugins/fancy-type/screen.css" type="text/css" media="screen, projection">
+	<style type="text/css" media="screen">
+		p, table, hr, .box { margin-bottom:25px; }
+		.box p { margin-bottom:10px; }
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+	
+		<h3 class="center alt">&ldquo;Lift File Manager &rdquo; Documentation by &ldquo;Codstack Team&rdquo; v3.3.0</h3>
+		
+		<hr>
+		
+		<h1 class="center">&ldquo;Lift File Manager &rdquo; V3.3.0</h1>
+		
+		<div class="borderTop">
+			<div class="span-6 colborder info prepend-1">
+				<p class="prepend-top">
+					<strong>
+					Created: 07/15/2013<br>
+                    Updated: 02/26/2015<br>
+					By: Codstack Team<br>
+					Email: <a href="mailto:codstack@gmail.com">codstack@gmail.com</a>
+					</strong>
+				</p>
+                <p>&nbsp;</p>
+			</div><!-- end div .span-6 -->
+
+			<div class="span-12 last">
+				<p class="prepend-top append-0">Thank you for purchasing Lift File Manager. If you have any questions that are beyond the scope of this help file, please feel free to email via our user page contact form <a href="http://codecanyon.net/user/codstack" target="_blank">here</a>.</p>
+                <p>You can also get supported with our <a href="http://www.support.codstack.com/" target="_blank">support system</a>. Thanks so much!</p>
+			</div>
+		</div><!-- end div .borderTop -->
+		
+		<hr>
+		
+		<h2 id="toc" class="alt">Table of Contents</h2>
+		<ol class="alpha">
+			<li><a href="#htInstall">How to install</a></li>
+			<li><a href="#hiWorks">How it works</a><br><a href="#fileManager" style="padding-left: 20px;">File Manager</a><br><a href="#backups" style="padding-left: 20px;">Backup Files</a><br><a href="#generalS" style="padding-left: 20px;">General Settings</a><br><a href="#AddU" style="padding-left: 20px;">Add User</a><br><a href="#users" style="padding-left: 20px;">Users</a><br><a href="#tickets" style="padding-left: 20px;">Tickets</a><br><a href="#editProfile" style="padding-left: 20px;">Profile</a><br><a href="#logout" style="padding-left: 20px;">Shared Files</a></li>
+            <li><a href="#translate">Multi Language</a></li>
+            <li><a href="#credits">Credits</a></li>
+		</ol>
+		
+		<hr>
+		
+		<h3 id="htInstall"><strong>A) How to install</strong> <a style="text-decoration:none;float:right;" href="#toc">TOP</a></h3>
+
+
+        <b>( a )</b> If you have NOT purchased the previous version just do as the following:<br><br>
+        <ul>
+        There are just <strong>six simple steps</strong> you need to do before getting started:
+        <li>First, make a database on your server. We assume that you know how to make it but if you don't please go to our <a href="http://support.codstack.com" target="_blank">FAQ</a>.</li>
+        <li>Open the file<b style="color: #8a2be2;"> filemanager_config.php</b> and edit it concerning the comments you see there. Here edit your server database information.</li>
+        <li>Upload the content of the file that you have just downloaded except the <i style="color: #d12f19;"> documentation folder</i>, to your server by your ftp.</li>
+        <li>Then go to <b style="color: #8a2be2;">filemanager_install</b> directory on your server by a browser and fill the form.<pre>e.g: http://www.yourdomain.com/whereYouHaveUploaded/filemanager_install</pre><strong style="color: #ff8c00;">NOTE</strong>: In this product you can log in with both your Username or Email :) <br>If the installation is successfully finished the following message will be shown:<br><i style="color:#529214;">“Installing Lift File Manager has been finished…”</i></li>
+        <li>Finally, you should delete the folder <b style="color: #8a2be2;">filemanager_install</b> for your security by your ftp.</li>
+        <li>Now, everything is ready. You should only go to <b style="color: #8a2be2;">Where You Have Installed</b> LIFT by a web browser and get logged in with your account information that you have filled in the form you saw a few minutes ago.<pre>Go to this link with browser to <b>login page</b>. e.g: http://www.yourdomain.com/whereYouHaveUploaded</pre></li>
+        </ul>
+
+        <br><b>( b )</b> If you own the previous version of this product please follow the steps below to easily update to the new version:<br><br>
+        <ul>
+            There are just <strong>3 simple steps</strong> you need to do before enjoying the new version:
+            <li>First of all <span style="padding:3px;border-radius:2px;background-color:#F6C;font-weight:bold;color:white;">DON'T forget</span> to make a backup of your database.</li>
+            <li>Now you should upload the content of the file that you have just downloaded and let them be replaced with their previous files except the <i style="color: #d12f19;"> documentation folder</i>, to your server by your ftp. You don't also need to upload the <b style="color: #d12f19;"> filemanager_config.php</b> file and <b style="color: #d12f19;"> filemanager_install</b> directory to your server because you have done this before. You'll need to change it a bit later. But you should delete the <b style="color: #8a2be2;">filemanager_admin</b> directory.</li>
+            <li>Now you should match the content of the new <b style="color: #d12f19;"> filemanager_config.php</b> file with your previous config file. <br>
+            <pre style="font-size:12px; line-height:12px;">
+                <center><img src="assets/images/config.png" style="width:600px;" /> </center>
+<br><br>
+
+</li>
+           </ul>
+		
+        <hr>
+        <div style="padding:10px;background-color:#66C;color:#FFF;border-radius:3px;">
+        <h4 style="color:white;"><strong> How to change the root directory</strong></h4>
+        <ul>If you intend to change your root directory you are needed to do as bellow:
+        <li>You shoud open <b>filemanager_config.php</b> file on your server.</li>
+        <li> Then you should enter your new path for <b>ROOT_DIR_PATH</b> variable in line <b>13</b> and it's done.</li>
+        </ul>
+        </div>
+        <div style="padding:10px;background-color:#F66;color:#FFF;border-radius:3px;margin-top:12px;">
+        <ul> Those who have added users on their servers and decided to change their root should do as bellow:
+         <li>Please make a backup from your database.</li>
+         <li>Open <b>filemanager_config.php</b> file on your server.</li>
+         <li>Now you should enter you new path for <b>ROOT_DIR_PATH</b> variable in line <b>13</b></li>
+         <li>Copy the content of the previous root to your new root.</li>
+         <li>Enter your previous path for the LAST_ROOT_DIR_PATH variable in <b>filemanager_config.php</b> file in line <b>17</b></li>
+         <li>Now you should upload filemanager_install directory to your server where you have installed your the call the set_root_action.php through browser. It will be finished then!<br>
+         <pre>e.g: http://www.yourdomain.com/whereYouHaveUploaded/filemanager_install/set_root_action.php</pre></li>
+         <li>Finally you should delete filemanager_install directory from your server.</li>
+        </ul>
+        </div>
+        
+		<hr style="margin-top:30px;">
+
+		<h3 id="hiWorks"><strong>B) How it works</strong> <a style="text-decoration:none;float:right;" href="#toc">TOP</a></h3>
+        <p>
+           Now let’s  see how this product really works and cover its different sections:
+        </p>
+        
+        <h4 id="fileManager" style="font-weight: bold;">File Manager <a href="#toc" title="Click to go to top" style="text-decoration: none; float:right;">^</a></h4>
+        <p>This is the main section in which you are able to manage your server files and folders.<br> These are easy to work with so we just review them. As you can see in this section there are different parts here:</p>
+        <ul>
+        	<li><b>Sort by</b>: You can view your files & folders sorted by date or name.</li>
+            <li><b>New Folder</b>: You can add a new folder in the current folder & choose a name for it.<br><strong style="color: #ff8c00;">NOTE</strong>: Please be careful and don’t use duplicate names.</li>
+            <li><b>Copy</b>: Select your files or folders and click on the button Copy, choose your target directory and click on the button Copy.</li>
+            <li><b>Move</b>: Select your files or folders and click on the button Move, choose your target directory and click on the button Move.</li>
+            <li><b>Remove</b>: Select your file or folder and click on the button Remove and confirm the modal question.</li>
+            <li><b>Zip</b>: Select your files and folders and click on the button Zip, then write a name for your zip file in the opened window.</li>
+            <li><b>Upload</b>: Click on the button Upload, select your files or folders from your device and upload them easily.</li>
+            <li><b>Download</b>: Select your files or folders to and click on the button Download.</li>
+            <li><b>Share</b>: You can share files both via email and online in Lift area. Select your files and folders and click on the button Share, then fill the needed inputs.</li>
+            <li><b>Backup</b>: Select your files and folders and click on the button Backup, then write a name for your backup.<br>You can view your backups in the Backup Files section.</li>
+            <li><b>Site Map</b>: This is a clickable tree structure of your server files and folders.<br>You can easliy navigate to wherever you want to go on your server folders.</li>
+            <li><b>Used Size</b>: If you have logged in as a User, there is another part named Used Size in which you can view the user file limitation as a user. If you are a public user you can not veiw this part.</li><br>
+            
+            <p>
+                <strong style="color: #ff8c00;">NOTE</strong>: All of these functionalities are accessible for any files and folders individually at their right sides.
+                You can select your file or folder and click on the blue icon at their right side and perform any of tasks explained above for each of your server’s files or folders.
+            </p>
+        </ul>
+
+        <center><img src="assets/images/filemanager.png" alt="" /></center>
+        <p>
+           <h4 id="backups" style="font-weight: bold;">Backup Files <a href="#toc" title="Click to go to top" style="text-decoration: none; float:right;">^</a></h4>
+           In this section if you have made some backups before you can view, delete or download them here.
+           <br><strong style="color: #ff8c00;">NOTE</strong>: In this version if you give your users the ability to make backups, you can view these backups made by your users but they themselves can not view these backups. Also the name of the backup files made by users is started with their usernames.
+        </p>
+        <p>
+        <h4 id="generalS" style="font-weight: bold;">General Settings <a href="#toc" title="Click to go to top" style="text-decoration: none;float:right;">^</a></h4>
+        In this section there are two columns in which you can determine which extensions are going to be shown on File Manager and Uploader.
+        <br><strong style="color: #ff8c00;">NOTE</strong>: Uploader contains the extensions that you want to be accessible when uploading files to your server. Here you can also set which extensions shall be shown on File Manager.
+        <br>You need to just write the extension and click on Add button to add a new extension and click on Remove button to remove an extension.
+        </p>
+        <p>There are also some settings for Ticket System, File Sharing, User Registeration and Upload Notification's status:
+        	<ul>
+            	<li><strong>Ticket</strong>: If it is set to Off, users won't have access to Ticket System and can not send tickets to the admin ( the same happens to the admin ).</li>
+                <li><strong>Share via Email</strong>: If it is set to Off, users can't Share files via email</li>
+                <li><strong>Share Online</strong>: If it is set to Off, users can't Share files in Lift.</li>
+                <li><strong>Download Link</strong>: If it is set to On, the system will also provide you with a<br>Download URL of your file which can be used outside of Lift.</li>
+                <li><strong>User Registration</strong> : If it is set to On, a link will be appeared on the login page by which users can register in the Lift File Manager online. As it is set to On, a modal will be appeared in which you can set <a href="#userReg">User Registeration Settings</a></li>
+                <li><strong>Admin Notification</strong>: If it is set to On, an email ( containing the information like; what file is uploaded, which user has uploaded the related file, in which directory the file is uploaded and the date of the upload ) will be sent to the admin when users upload files to the system.</li>
+                <li><strong>User Notification</strong>: If it is set to On, an email ( containing the information like; what file is uploaded, which user has uploaded the related file, in which directory the file is uploaded and the date of the upload ) will be sent to the the user himsef when the user upload files to the system.</li>
+            </ul>
+            <ul style="list-style: none;">
+            	<li id="userReg"><h5>User Registeration Settings</h5>
+                	<ol>
+                    	<li>In related modal, firstly you should define a general folder ( Registered Users' Directory ) in which all Registered Users will be placed. So in Select User Folder input define that folder. You can click on Site Map button next to the mentioned input and easily select a folder. By doing so when a user register online, an invidual directory will be made in this Registered Users' Directory. The name of each user directory automatically comes from the user's username.</li>
+                        <li>Next you should determine the Set Size Limitation and Set Upload Size Limitation for the Registered Users. </li>
+                        <li>Finilly you should set and customize Registered user permissions, Allowed extensions for user in file manager and Allowed extensions for user in uploader depending on your project policy</li>
+                        <li>Later under the <a href="#users">Users</a> section you can also change these settings.</li>
+                    </ol>
+                </li>
+            </ul>
+            <center><img src="assets/images/filemanager3.png" alt="" /></center>
+        </p>
+        <p>
+        <h4 id="AddU" style="font-weight: bold;">Add User <a href="#toc" title="Click to go to top" style="text-decoration: none; float:right;">^</a></h4>
+        In this section there are three columns; <i>Account Setting</i>, <i>Allowed extensions for user in file manager</i> & <i>Allowed extensions for user in uploader</i> in a way that in each of these parts you can add new users and set your users options.
+        <br>Let's get familiar with them:
+        <ul>
+            <li><h6> Account Setting:</h6> Well fill its different inputs like First Name, Last Name, Username and etc.<br>
+                Ok, let's check its most important parts out:<br>
+                <strong style="color: #000000;">*</strong> <i style="color: #7b68ee;">Send username / password for user via email</i>: If you check it, after you add your new user an email containing the account info will be sent to your user.<br>
+                <strong style="color: #000000;">*</strong> <i style="color: #7b68ee;">Select User Folder</i>: You will also see this part by which you can specify your user's home directory to which the new user can have access. You can also assign multiple folders to users by clicking on <span style="background-color:#6C3;color:white; padding:3px;border-radius:3px;">Add Extra Folder</span> button.<br>
+                <strong style="color: #000000;">*</strong> <i style="color: #7b68ee;">Set Size Limitation (MB)</i>: You can define the amount of the files that user can upload totally to server.<br>
+                <strong style="color: #000000;">*</strong> <i style="color: #7b68ee;">Set Upload Size Limitation (MB)</i>: You can define the amount of the upload size that user can upload to server per every file.<br>
+                <strong style="color: #000000;">*</strong> <i style="color: #7b68ee;">Deny Folders Or Files With Name</i>: You can select which files or folders can not be accessible by the user. You only need to click on the folder or file name. <br>
+                <strong style="color: #000000;">*</strong> <i style="color: #7b68ee;">Set User Permissions</i>: This is the nicest part in which you can give the user three types of general permissions. If you set it as <b style="color: #7b68ee;">Public</b> the user can only see the server files / folders and download them. If you set it as <b style="color: #7b68ee;">Full</b> the user can have a full access to all of the features of  File Manager & Backup System just like an admin and can edit his own profile too. However a full permission does not lead the user to have access to General Settings, Add User & Users menus. If you click on <b style="color: #7b68ee;">Customization</b> you can customize the permissions for the user :) <br>
+            </li>
+            <li><h6>Allowed extensions for user in file manager:</h6> <span style="font-size: 11px;">In this column you can define which extentions your user is able to see in File Manager.</span></li>
+            <li><h6>Allowed extensions for user in uploader:</h6> <span style="font-size: 11px;">In this column you can define which extentions your user is able to upload to server.</span></li>
+        </p>
+        </ul>
+        <p>
+        <h4 id="users" style="font-weight: bold;">Users <a href="#toc" title="Click to go to top" style="text-decoration: none; float:right;">^</a></h4>
+        In this section you can view / edit / manage the registered users or users that you have manually added. You can block or unblock them temporarily or even remove them permanently. You fully control them here. It's easy to work with. Just try the demo.<br> There will be also shown 10 users in every pages.
+        </p>
+
+            <ul>Let's review its different parts:
+                <li><b>Edit</b>: Here all of the features and facilities described in Add User section will be granted to you as an admin.</li>
+                <li><b>Block / Unblock</b>: You may want to block / unblock a user. It's ok just click on it.</li>
+                <li><b>Remove</b>: If you want to remove a user you can click on it.</li>
+                <li><b>User Folder</b>: You can see the home directory of the user.</li>
+                <li><b>User profile</b>: You can view some basic info of user like username, email & etc.</li>
+                <li><b>User Permissions</b>: Click on the button User Permission to see the type of the permission the user is attached to.</li>
+                <li><b>Allow Extensions</b>: You can check which types of files the user is able to see in File Manager </li>
+                <li><b>Allow Uploader</b>: You can check which types of files the user is able to upload to server.</li>
+                <li><b>Deny Folders/Files</b>: You can see which files or folders are forbidden for the user to be seen.</li><br>
+            </ul>
+            <center><img src="assets/images/filemanager2.png" alt="" /></center>
+		
+        <p>
+        <h4 id="tickets" style="font-weight: bold;">Tickets <a href="#toc" title="Click to go to top" style="text-decoration: none; float:right;">^</a></h4>
+        In this section if the admin has set Tickets On, users can send tickets to the admin and admin can easily view and manage the exchanged tickets. 
+        </p>
+        
+        <p>
+        <h4 id="editProfile" style="font-weight: bold;">Edit Profile <a href="#toc" title="Click to go to top" style="text-decoration: none; float:right;">^</a></h4>
+        You can edit or change your account information like username or password.
+        </p>
+
+        <p>
+        <h4 id="logout" style="font-weight: bold;">Shared Files <a href="#toc" title="Click to go to top" style="text-decoration: none; float:right;">^</a></h4>
+        All the files which are shared online can be seen in this part.
+        </p>
+
+        <hr>
+		
+		<h3 id="translate"><strong>C) Multi Language</strong> <a style="text-decoration:none;float:right;" href="#toc">TOP</a></h3>
+
+        <h4><strong>How to add languages in language module</strong></h4>
+        <p>You can add unlimited language files in the following path on your server: <pre> ..\filemanager_assets\lng</pre></p>
+        <ul>
+            <li>There are three sample php files namely French, German and English in the above mentioned path.</li>
+        <li>Copy and paste one the above files in the same directory then rename it to your own favorite language name.</li>
+        <li>Then open the renamed file in a text file editor like notepad++ and translate its content to your language.</li>
+        </ul>
+        <h4><strong>Don't forget to</strong></h4>
+		<p>
+        Set these lines in each of your language files
+		</p> 
+        
+        <p> Ok open each of them you want by a simple text editor like Notepad++ (Recommended) or whaterver and edit these important lines.<br>Choose your language charset then specify whether it is a Right to Left language or Vice Versa:<br>
+			<code style="background-color: #CCF; padding:2px;">$language["charset"] = "utf-8"; // Select your language's charset unicode<br>
+$language["direction"] = "ltr"; // This should be set to "rtl" or "ltr"<br>( if your language is a Right to Left language replace "ltr" with "rtl" and vice versa )</code>
+            
+		</p>
+
+		<hr>
+        
+		<h3 id="credits"><strong>D) Sources and Credits</strong> <a style="text-decoration:none;float:right;" href="#toc">TOP</a></h3>
+		
+		<p>
+        We've used the following.
+        </p>
+		
+		<ul>
+			<li><a href="http://getbootstrap.com/" target="_blank">Twiter Bootstrap</a></li>
+            <li><a href="https://github.com/morteza/bootstrap-rtl" target="_blank">RTL Bootstrap</a></li>
+            <li><a href="https://github.com/gcochard/jquery-file-tree" target="_blank">jQuery File Tree</a></li>
+            <li><a href="https://github.com/vakata/jstree" target="_blank">JS Tree</a></li>
+            <li><a href="https://github.com/danielm/uploader" target="_blank">JQuery File Uploader</a></li>
+            <li><a href="http://www.phpcaptcha.org/" target="_blank">PHP Captcha Code</a></li>
+            <li><a href="https://github.com/PHPMailer/PHPMailer/" target="_blank">PHP Mailer</a></li>
+            <li><a href="https://github.com/fancyapps/fancyBox" target="_blank">Fancy Box</a></li>
+		</ul>
+		
+		<hr>
+		
+		<p>Thank you so much for purchasing this item. We'd be glad to <a href="http://www.support.codstack.com/" target="_blank">support</a> you if you have any questions or issues related to this item.</p>
+		
+		<p class="append-bottom alt large"><strong>Codstack Team</strong></p>
+		<p><a href="#toc">Go To Table of Contents</a></p>
+		
+		<hr class="space">
+	</div><!-- end div .container -->
+</body>
+</html>

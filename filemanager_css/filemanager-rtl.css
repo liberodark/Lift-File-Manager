@@ -1,0 +1,28 @@
+.filemanager-gravatar {
+    margin-left: 0;
+    margin-right: -16px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.navbar-brand {
+    padding-left: 10px;
+    padding-right: 95px;
+}
+
+.filemanager-nav-logout {
+    position: absolute;
+    right: 195px;
+    float: left !important;
+}
+
+.filemanager-nav-profile {
+    position: absolute;
+    right: 95px;
+}
+
+#tree {
+    float: right;
+}
