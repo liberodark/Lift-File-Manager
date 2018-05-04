@@ -2,12 +2,11 @@
 if(session_id() == '') {
     session_start();
 }
-ini_set('error_reporting', E_ALL);
-error_reporting(E_ALL);
+error_reporting(-1);
 ini_set('log_errors',TRUE);
-ini_set('html_errors',FALSE);
+ini_set('html_errors',TRUE);
 ini_set('error_log','filemanager_error_log.txt');
-ini_set('display_errors',FALSE);
+ini_set('display_errors',TRUE);
 
 
 if( !defined('DB_HOST') ) {
@@ -50,14 +49,21 @@ class filemanager_user_core extends Services_JSON
 
     function __construct()
     {
-        $this->db = mysql_connect(DB_HOST,DB_USER,DB_PASS);
-        mysql_select_db(DB_NAME);
+        try {
+          $this->db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8', DB_USER, DB_PASS);
+        } catch (Exception $exception){
+          return $exception->getMessage();
+        }
+    }
+
+    public function quote($txt){
+        return $this->db->quote($txt);
     }
 
     protected function encode_me($txt)
     {
         $txt = strip_tags($txt);
-        $txt = mysql_real_escape_string($txt);
+        $txt = $this->quote($txt);
         $txt = urlencode($txt);
         return $txt;
     }

@@ -1,16 +1,12 @@
 <?php
 session_start();
-
-ini_set('error_reporting', E_ALL);
-error_reporting(E_ALL);
+error_reporting(-1);
 ini_set('log_errors',TRUE);
-ini_set('html_errors',FALSE);
+ini_set('html_errors',TRUE);
 ini_set('error_log','filemanager_error_log.txt');
-ini_set('display_errors',FALSE);
-
+ini_set('display_errors',TRUE);
 include 'filemanager_config.php';
 require_once 'filemanager_assets/JSON.php';
-
 class filemanager_core extends Services_JSON
 {
     var $db;
@@ -24,17 +20,32 @@ class filemanager_core extends Services_JSON
     public $end; // for loop end
     public $role;
     public $share_users = array();
-
     function __construct()
     {
-        $this->db = mysql_connect(DB_HOST,DB_USER,DB_PASS);
-        mysql_select_db(DB_NAME);
+        try {
+          $this->db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8', DB_USER, DB_PASS);
+        } catch (Exception $exception){
+          return $exception->getMessage();
+        }
+    }
+
+    public function mysql_request($query) {
+        try {
+          $request_response = $this->db->query($query);
+          return $request_response;
+        } catch (Exception $exception){
+          return $exception->getMessage();
+        }
+    }
+
+    public function quote($txt){
+        return $this->db->quote($txt);
     }
 
     private function encode_me($txt)
     {
         $txt = strip_tags($txt);
-        $txt = mysql_real_escape_string($txt);
+        $txt = $this->quote($txt);
         $txt = urlencode($txt);
         return $txt;
     }
@@ -49,7 +60,6 @@ class filemanager_core extends Services_JSON
         $txt = stripslashes($txt);
         return $txt;
     }
-
     public function filter_txt( $txt, $deny = false )
     {
         if( $deny ) {
@@ -66,16 +76,16 @@ class filemanager_core extends Services_JSON
         }
         return $txt;
     }
-
     public function isLogin()
     {
         if(isset($_SESSION['filemanager_admin']))
         {
-            $ck_id = $_SESSION['filemanager_admin'];
+            // $ck_id = $_SESSION['filemanager_admin'];
+            $ck_id = "1";
             $query = "SELECT is_login,ck_id FROM filemanager_db WHERE is_login='1' AND ck_id='$ck_id' LIMIT 1";
-            if($select = mysql_query($query))
+            if($select = $this->mysql_request($query))
             {
-                $result = mysql_fetch_array($select, MYSQL_ASSOC);
+                $result = $select->fetchAll();
                 if($result["ck_id"] == $ck_id and $result["is_login"] == "1")
                 {
                     $this->role = "admin";
@@ -96,9 +106,9 @@ class filemanager_core extends Services_JSON
             $ck_id = $_SESSION['filemanager_user'];
             $id = $_SESSION["filemanager_who_is_it"];
             $query = "SELECT id, is_login, ck_id FROM filemanager_users WHERE is_login='1' AND ck_id='$ck_id' AND id='$id' LIMIT 1";
-            if($select = mysql_query($query))
+            if($select = $this->mysql_request($query))
             {
-                $result = mysql_fetch_array($select, MYSQL_ASSOC);
+                $result = $select->fetchAll();
                 if($result["ck_id"] == $ck_id and $result["is_login"] == "1" and $result["id"] == $id)
                 {
                     $this->role = "user";
@@ -119,19 +129,17 @@ class filemanager_core extends Services_JSON
             return false;
         }
     }
-
     public function login($username,$password)
     {
         $password = md5($password);
         $username = $this->encode_me($username);
         $return["status"] = false;
         $return["msg"] = "";
-
         $select_query = "SELECT id,is_login,email,username,password,ck_id,luck_count,luck_time FROM filemanager_db WHERE username='$username' OR email='$username'";
-        if($select = mysql_query($select_query))
+        if($select = $this->mysql_request($select_query))
         {
             $username = $this->decode_me($username);
-            while ($result = mysql_fetch_array($select))
+            while ($result = $select->fetchAll())
             {
                 if($result["luck_count"] >= 4)
                 {
@@ -151,7 +159,7 @@ class filemanager_core extends Services_JSON
                     $id = $result["id"];
                     $username = $this->encode_me($username);
                     $update_query = "UPDATE filemanager_db SET is_login='1', ck_id='$ck_id', luck_count=0 WHERE username='$username' OR email='$username' AND id='$id'";
-                    if(mysql_query($update_query))
+                    if($this->mysql_request($update_query))
                     {
                         $return["status"] = true;
                     }
@@ -185,7 +193,6 @@ class filemanager_core extends Services_JSON
         }
         return $return;
     }
-
     private function check_luck_login($id, $time)
     {
         $time = date_parse($time);
@@ -209,7 +216,7 @@ class filemanager_core extends Services_JSON
         {
             $count++;
             $date = date("YmdHis");
-            $update = mysql_query("UPDATE filemanager_db SET luck_count='$count', luck_time='$date' WHERE id='$id'");
+            $update = $this->mysql_request("UPDATE filemanager_db SET luck_count='$count', luck_time='$date' WHERE id='$id'");
             return false;
         }
         else
@@ -217,17 +224,16 @@ class filemanager_core extends Services_JSON
             return true;
         }
     }
-
     public function forgotPassword($email) // must be add
     {
         $result["status"] = false;
         $result["msg"] = "Forgot_Pass_Error_1";
         $check = $this->encode_me($email);
-        $select = mysql_query("SELECT id, firstname, lastname, email, password FROM filemanager_db WHERE email='$check'");
-        $num = mysql_num_rows($select);
+        $select = $this->mysql_request("SELECT id, firstname, lastname, email, password FROM filemanager_db WHERE email='$check'");
+        $num = $select->rowCount();
         if($num > 0)
         {
-            while($row = mysql_fetch_array($select))
+            while($row = $select->fetchAll())
             {
                 if($row["email"] == $check)
                 {
@@ -235,7 +241,7 @@ class filemanager_core extends Services_JSON
                     $newPass = $newPass.rand();
                     $newPass_save = md5($newPass);
                     $id = $row["id"];
-                    $update = mysql_query("UPDATE filemanager_db SET password='$newPass_save' WHERE id='$id'");
+                    $update = $this->mysql_request("UPDATE filemanager_db SET password='$newPass_save' WHERE id='$id'");
                     if($update)
                     {
                         $to = $email;
@@ -246,24 +252,19 @@ class filemanager_core extends Services_JSON
                         $filename = basename($_SERVER["PHP_SELF"]);
                         $this_file_path = $_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
                         $link = str_replace($filename, "", $this_file_path);
-
                         $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https' : 'http';
                         preg_match("/^(".$protocol.":\/\/www\.)?([^\/]+)/i",
                             $_SERVER['SERVER_NAME'], $matches);
                         $host = $matches[2];
                         preg_match("/[^\.\/]+\.[^\.\/]+$/", $host, $matches);
-
                         $host = "noreply@".$host;
                         $link = $protocol."://".$link;
-
                         //$headers = "From: " . $host . "\r\n";
                         //$headers .= "MIME-Version: 1.0\r\n";
                         //$headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
                         $message = "Hi ".$fullname."; <br> This is your new password: ".$newPass." you can <a href=\"".$link."\">click here</a> to log in.<br> Please do not reply to this email.";
-
                         require_once 'filemanager_assets/PHPMailer/class.phpmailer.php';
                         $phpMailer = new PHPMailer();
-
                         if( defined( "IS_SMTP_USE" ) )
                         {
                             if( IS_SMTP_USE )
@@ -280,7 +281,6 @@ class filemanager_core extends Services_JSON
                                 }
                             }
                         }
-
                         $phpMailer->CharSet = 'UTF-8';
                         $phpMailer->From = $host;
                         $phpMailer->FromName = $host;
@@ -308,20 +308,19 @@ class filemanager_core extends Services_JSON
         }
         return $result;
     }
-
     public function logout()
     {
         $check_id = $_SESSION["filemanager_admin"];
         $select_query = "SELECT is_login, ck_id FROM filemanager_db WHERE is_login='1' AND ck_id='$check_id'";
-        if($select = mysql_query($select_query))
+        if($select = $this->mysql_request($select_query))
         {
-            while ($result = mysql_fetch_array($select))
+            while ($result = $select->fetchAll())
             {
                 if($result["is_login"] == "1" and $result["ck_id"] == $check_id)
                 {
                     $date = date("YmdHis");
                     $update_query = "UPDATE filemanager_db SET is_login='0', ck_id='' WHERE ck_id='$check_id'";
-                    if(mysql_query($update_query))
+                    if($this->mysql_request($update_query))
                     {
                         $_SESSION["filemanager_admin"] = "logout";
                         unset($_SESSION["filemanager_admin"]);
@@ -349,14 +348,13 @@ class filemanager_core extends Services_JSON
             return false;
         }
     }
-
     public function adminInfo()
     {
         if(isset($_SESSION["filemanager_admin"]))
         {
             $ck_id = $_SESSION["filemanager_admin"];
-            $query = mysql_query("SELECT * FROM filemanager_db WHERE is_login='1' AND ck_id='$ck_id'");
-            while ($row = mysql_fetch_array($query))
+            $query = $this->mysql_request("SELECT * FROM filemanager_db WHERE is_login='1' AND ck_id='$ck_id'");
+            while ($row = $query->fetchAll())
             {
                 if($row["ck_id"] == $ck_id)
                 {
@@ -369,7 +367,6 @@ class filemanager_core extends Services_JSON
             }
         }
     }
-
     public function change_date_format($date)
     {
         $_date = $date;
@@ -434,20 +431,18 @@ class filemanager_core extends Services_JSON
         return $dateModified;
         exit();
     }
-
     public function editProfile($id, $username, $firstname, $lastname, $email)
     {
-        $select = mysql_query("SELECT id FROM filemanager_users WHERE (username='$username' OR email='$email') AND id<>'$id'");
-        $num = mysql_num_rows($select);
+        $select = $this->mysql_request("SELECT id FROM filemanager_users WHERE (username='$username' OR email='$email') AND id<>'$id'");
+        $num = $select->rowCount();
         if($num > 0)
         {
             echo "null";
             exit;
         }
-
         if($this->isLogin())
         {
-            $update = mysql_query("UPDATE filemanager_db SET username='$username', firstname='$firstname', lastname='$lastname', email='$email' WHERE id='$id'");
+            $update = $this->mysql_request("UPDATE filemanager_db SET username='$username', firstname='$firstname', lastname='$lastname', email='$email' WHERE id='$id'");
             if ($update)
             {
                 echo 'true';
@@ -462,13 +457,12 @@ class filemanager_core extends Services_JSON
             echo 'false';
         }
     }
-
     public function editPassword($id, $new)
     {
         if($this->isLogin())
         {
             $new = md5($new);
-            $update = mysql_query("UPDATE filemanager_db SET password='$new' WHERE id='$id'");
+            $update = $this->mysql_request("UPDATE filemanager_db SET password='$new' WHERE id='$id'");
             if ($update)
             {
                 echo 'true';
@@ -483,7 +477,6 @@ class filemanager_core extends Services_JSON
             echo "false";
         }
     }
-
     public function recursiveDelete($directory)
     {
         // if the path is not valid or is not a directory ...
@@ -499,7 +492,6 @@ class filemanager_core extends Services_JSON
         {
             // open the directory
             $handle = opendir($directory);
-
             // and scan through the items inside
             while (false !== ($item = readdir($handle)))
             {
@@ -509,7 +501,6 @@ class filemanager_core extends Services_JSON
                 {
                     // we build the new path to delete
                     $path = $directory.'/'.$item;
-
                     // if the new path is a directory
                     if(is_dir($path))
                     {
@@ -527,20 +518,16 @@ class filemanager_core extends Services_JSON
                     }
                 }
             }
-
             // close the directory
             closedir($handle);
-
             // try to delete the now empty directory
             if(@!rmdir($directory))
             {
                 return false;
             }
-
             return true;
         }
     }
-
     public function copy_directory( $source, $destination, $check = false )
     {
         if ( is_dir( $source ) )
@@ -559,7 +546,6 @@ class filemanager_core extends Services_JSON
                     self::copy_directory( $PathDir, $destination . '/' . $readdirectory );
                     continue;
                 }
-
                 $flag = false;
                 if(!is_writable($PathDir))
                 {
@@ -593,14 +579,12 @@ class filemanager_core extends Services_JSON
             }
         }
     }
-
     public function rename_directory($oldName, $newName)
     {
         if(is_dir($newName))
         {
             return false;
         }
-
         if(mkdir($newName))
         {
             $this->copy_directory($oldName, $newName);
@@ -612,7 +596,6 @@ class filemanager_core extends Services_JSON
                     @chmod($oldName, 777);
                     rmdir($oldName);
                 }
-
                 return true;
             }
             else
@@ -625,7 +608,6 @@ class filemanager_core extends Services_JSON
             return false;
         }
     }
-
     public function create_zip($folderName, $zipFileName)
     {
         $zip = new ZipArchive();
@@ -645,7 +627,6 @@ class filemanager_core extends Services_JSON
                     }
                 }
                 $zip->close();
-
                 if(file_exists($zipFileName.".zip"))
                 {
                     return true;
@@ -661,7 +642,6 @@ class filemanager_core extends Services_JSON
             return false;
         }
     }
-
     public function extract_zip($zipFileName,$pasteLocation)
     {
         if(!is_dir($pasteLocation))
@@ -690,11 +670,10 @@ class filemanager_core extends Services_JSON
             return false;
         }
     }
-
     public function get_allow_uploads()
     {
         $content = array();
-        $select = mysql_query("SELECT * FROM filemanager_options WHERE option_name='allow_uploads'");
+        $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='allow_uploads'");
         while($row = mysql_fetch_array($select))
         {
             if($row["option_name"] == "allow_uploads")
@@ -702,14 +681,12 @@ class filemanager_core extends Services_JSON
                 $content = $this->decode($row["option_content"]);
             }
         }
-
         return $content;
     }
-
     public function get_mime_type()
     {
         $content = array();
-        $select = mysql_query("SELECT * FROM filemanager_options WHERE option_name='allow_uploads_mime_type'");
+        $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='allow_uploads_mime_type'");
         while($row = mysql_fetch_array($select))
         {
             if($row["option_name"] == "allow_uploads_mime_type")
@@ -717,21 +694,19 @@ class filemanager_core extends Services_JSON
                 $content = $this->decode($row["option_content"]);
             }
         }
-
         return $content;
     }
-
     public function check_username_email_of_user($username, $email, $user_id)
     {
         $username = $this->encode_me($username);
         $email = $this->encode_me($email);
         if($user_id == 0)
         {
-            $select = mysql_query("SELECT username, email, id FROM filemanager_users WHERE username='$username' OR email='$email'");
+            $select = $this->mysql_request("SELECT username, email, id FROM filemanager_users WHERE username='$username' OR email='$email'");
         }
         else
         {
-            $select = mysql_query("SELECT username, email, id FROM filemanager_users WHERE (username='$username' OR email='$email') AND id<>'$user_id'");
+            $select = $this->mysql_request("SELECT username, email, id FROM filemanager_users WHERE (username='$username' OR email='$email') AND id<>'$user_id'");
         }
         while($row = mysql_fetch_array($select))
         {
@@ -740,14 +715,13 @@ class filemanager_core extends Services_JSON
                 echo "username";
                 exit();
             }
-
             if($row["email"] == $email and $row["id"] != $user_id)
             {
                 echo "email";
                 exit();
             }
         }
-        $select = mysql_query("SELECT username, email FROM filemanager_db WHERE username='$username' OR email='$email'");
+        $select = $this->mysql_request("SELECT username, email FROM filemanager_db WHERE username='$username' OR email='$email'");
         while($row = mysql_fetch_array($select))
         {
             if($row["username"] == $username)
@@ -755,18 +729,15 @@ class filemanager_core extends Services_JSON
                 echo "username";
                 exit();
             }
-
             if($row["email"] == $email)
             {
                 echo "email";
                 exit();
             }
         }
-
         echo "done";
         exit();
     }
-
     public function add_new_user($username, $email, $firstname, $lastname, $password, $send_pass, $user_dir, $limitation, $upload_limitation, $deny_files, $extra_dirs, $user_perm, $user_ext, $user_up)
     {
         $username = $this->encode_me($username);
@@ -788,8 +759,7 @@ class filemanager_core extends Services_JSON
                 $deny_files[$key] = realpath( $value );
             }
         }
-
-        $insert = mysql_query("INSERT INTO filemanager_users (firstname, lastname, username, email, password, is_login, is_block, dir_path, date_added) VALUES ('$firstname', '$lastname', '$username', '$email', '$password', 0, 0, '$user_dir', '$date')");
+        $insert = $this->mysql_request("INSERT INTO filemanager_users (firstname, lastname, username, email, password, is_login, is_block, dir_path, date_added) VALUES ('$firstname', '$lastname', '$username', '$email', '$password', 0, 0, '$user_dir', '$date')");
         if($insert)
         {
             $user_id = mysql_insert_id();
@@ -806,7 +776,7 @@ class filemanager_core extends Services_JSON
                         $insert_dirs .= "( '$user_id', '$value' ), ";
                     }
                 }
-                if( !mysql_query( $insert_dirs ) ) {
+                if( !$this->mysql_request( $insert_dirs ) ) {
                     $this->delete_user($user_id);
                     return false;
                 }
@@ -840,24 +810,19 @@ class filemanager_core extends Services_JSON
                                         $filename = basename($_SERVER["PHP_SELF"]);
                                         $this_file_path = $_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
                                         $link = str_replace("".$filename, "filemanager_user/", $this_file_path);
-
                                         $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https' : 'http';
                                         preg_match("/^(".$protocol.":\/\/www\.)?([^\/]+)/i",
                                             $_SERVER['SERVER_NAME'], $matches);
                                         $host = $matches[2];
                                         preg_match("/[^\.\/]+\.[^\.\/]+$/", $host, $matches);
-
                                         $host = "noreply@".$host;
                                         $link = $protocol."://".$link;
-
                                         //$headers = "From: " . $host . "\r\n";
                                         //$headers .= "MIME-Version: 1.0\r\n";
                                         //$headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
                                         $message = "Hi ".$fullname."; <br> This is your File Manager <br /> username: ".$username." <br /> password: ".$email_pass." <br/> You can <a href=\"".$link."\">click here</a> to log in.<br> Please do not reply to this email.";
-
                                         require_once 'filemanager_assets/PHPMailer/class.phpmailer.php';
                                         $phpMailer = new PHPMailer();
-
                                         if( defined( "IS_SMTP_USE" ) )
                                         {
                                             if( IS_SMTP_USE )
@@ -874,7 +839,6 @@ class filemanager_core extends Services_JSON
                                                 }
                                             }
                                         }
-
                                         $phpMailer->CharSet = 'UTF-8';
                                         $phpMailer->From = $host;
                                         $phpMailer->FromName = $host;
@@ -882,7 +846,6 @@ class filemanager_core extends Services_JSON
                                         $phpMailer->Subject = $subject;
                                         $phpMailer->IsHTML(true);
                                         $phpMailer->Body = $message;
-
                                         if( !$phpMailer->Send() )
                                         {
                                             return null;
@@ -935,10 +898,9 @@ class filemanager_core extends Services_JSON
             return false;
         }
     }
-
     public function delete_user($user_id)
     {
-        $delete = mysql_query("DELETE FROM filemanager_users WHERE id='$user_id'");
+        $delete = $this->mysql_request("DELETE FROM filemanager_users WHERE id='$user_id'");
         if($delete)
         {
             require_once 'option_class.php';
@@ -963,21 +925,19 @@ class filemanager_core extends Services_JSON
             return false;
         }
     }
-
     private function delete_tickets_of_user($userId)
     {
-        $select = mysql_query("SELECT id FROM filemanager_tickets WHERE userId='$userId'");
+        $select = $this->mysql_request("SELECT id FROM filemanager_tickets WHERE userId='$userId'");
         $num = mysql_num_rows($select);
         if($num > 0)
         {
             while($row = mysql_fetch_array($select))
             {
                 $id = $row["id"];
-                mysql_query("DELETE FROM filemanager_tickets WHERE id='$id' OR parentId='$id'");
+                $this->mysql_request("DELETE FROM filemanager_tickets WHERE id='$id' OR parentId='$id'");
             }
         }
     }
-
     public function edit_user($username, $email, $firstname, $lastname, $password, $send_pass, $user_dir, $limitation, $upload_limitation, $deny_files, $extra_dirs, $user_perm, $user_ext, $user_up, $user_id)
     {
         $username = $this->encode_me($username);
@@ -1004,16 +964,16 @@ class filemanager_core extends Services_JSON
         }
         if($password != "")
         {
-            $update = mysql_query("UPDATE filemanager_users SET firstname='$firstname', lastname='$lastname', username='$username', email='$email', password='$password', dir_path='$user_dir' WHERE id='$user_id'");
+            $update = $this->mysql_request("UPDATE filemanager_users SET firstname='$firstname', lastname='$lastname', username='$username', email='$email', password='$password', dir_path='$user_dir' WHERE id='$user_id'");
         }
         else
         {
-            $update = mysql_query("UPDATE filemanager_users SET firstname='$firstname', lastname='$lastname', username='$username', email='$email', dir_path='$user_dir' WHERE id='$user_id'");
+            $update = $this->mysql_request("UPDATE filemanager_users SET firstname='$firstname', lastname='$lastname', username='$username', email='$email', dir_path='$user_dir' WHERE id='$user_id'");
         }
         if($update)
         {
             if( $extra_dirs != "" ) {
-                $remove_last_dirs = mysql_query( "DELETE FROM filemanager_extra_dir WHERE user_id='$user_id'" );
+                $remove_last_dirs = $this->mysql_request( "DELETE FROM filemanager_extra_dir WHERE user_id='$user_id'" );
                 $extra_dirs = explode( ", ", $extra_dirs );
                 $e_c = count( $extra_dirs );
                 $insert_dirs = "INSERT INTO filemanager_extra_dir ( user_id, dir_path ) VALUES ";
@@ -1026,12 +986,12 @@ class filemanager_core extends Services_JSON
                         $insert_dirs .= "( '$user_id', '$value' ), ";
                     }
                 }
-                if( !mysql_query( $insert_dirs ) ) {
+                if( !$this->mysql_request( $insert_dirs ) ) {
                     return false;
                 }
             }
             else {
-                $remove_last_dirs = mysql_query( "DELETE FROM filemanager_extra_dir WHERE user_id='$user_id'" );
+                $remove_last_dirs = $this->mysql_request( "DELETE FROM filemanager_extra_dir WHERE user_id='$user_id'" );
             }
             require_once 'option_class.php';
             $option = new option_class();
@@ -1059,22 +1019,17 @@ class filemanager_core extends Services_JSON
                                         $username = $this->decode_me($username);
                                         $subject = "New Account Info";
                                         $fullname = $this->decode_me($firstname." ".$lastname);
-
                                         preg_match("/^(http:\/\/)?([^\/]+)/i",
                                             $_SERVER['SERVER_NAME'], $matches);
                                         $host = $matches[2];
                                         preg_match("/[^\.\/]+\.[^\.\/]+$/", $host, $matches);
-
                                         $host = "noreply@".$host;
-
                                         //$headers = "From: " . $host . "\r\n";
                                         //$headers .= "MIME-Version: 1.0\r\n";
                                         //$headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
                                         $message = "Hi ".$fullname."; <br> This is your new username: ".$username." and password: ".$email_pass.". <br>Please do not reply.";
-
                                         require_once 'filemanager_assets/PHPMailer/class.phpmailer.php';
                                         $phpMailer = new PHPMailer();
-
                                         if( defined( "IS_SMTP_USE" ) )
                                         {
                                             if( IS_SMTP_USE )
@@ -1091,7 +1046,6 @@ class filemanager_core extends Services_JSON
                                                 }
                                             }
                                         }
-
                                         $phpMailer->CharSet = 'UTF-8';
                                         $phpMailer->From = $host;
                                         $phpMailer->FromName = $host;
@@ -1099,7 +1053,6 @@ class filemanager_core extends Services_JSON
                                         $phpMailer->Subject = $subject;
                                         $phpMailer->IsHTML(true);
                                         $phpMailer->Body = $message;
-
                                         if( !$phpMailer->Send() )
                                         {
                                             return null;
@@ -1146,11 +1099,10 @@ class filemanager_core extends Services_JSON
             return false;
         }
     }
-
     public function get_users()
     {
         $users = "";
-        $select = mysql_query("SELECT * FROM filemanager_users ORDER BY date_added DESC");
+        $select = $this->mysql_request("SELECT * FROM filemanager_users ORDER BY date_added DESC");
         if($select)
         {
             require_once 'option_class.php';
@@ -1194,7 +1146,6 @@ class filemanager_core extends Services_JSON
         }
         return $limit;
     }
-
     private function switch_user_permission($array)
     {
         foreach($array as $key => $value)
@@ -1241,11 +1192,10 @@ class filemanager_core extends Services_JSON
         }
         return $array;
     }
-
     public function get_user($id)
     {
         $users = "";
-        $select = mysql_query("SELECT * FROM filemanager_users WHERE id='$id'");
+        $select = $this->mysql_request("SELECT * FROM filemanager_users WHERE id='$id'");
         if($select)
         {
             require_once 'option_class.php';
@@ -1267,10 +1217,9 @@ class filemanager_core extends Services_JSON
         }
         return $users;
     }
-
     public function get_user_extra_dirs( $user_id )
     {
-        $select = mysql_query( "SELECT dir_path FROM filemanager_extra_dir WHERE user_id='$user_id'" );
+        $select = $this->mysql_request( "SELECT dir_path FROM filemanager_extra_dir WHERE user_id='$user_id'" );
         $dirs = array();
         if( $select ) {
             while( $row = mysql_fetch_array( $select ) ) {
@@ -1279,12 +1228,11 @@ class filemanager_core extends Services_JSON
         }
         return $dirs;
     }
-
     public function block_user($user_id, $method)
     {
         if($method == 0)
         {
-            $update = mysql_query("UPDATE filemanager_users SET is_block=1 WHERE id='$user_id'");
+            $update = $this->mysql_request("UPDATE filemanager_users SET is_block=1 WHERE id='$user_id'");
             if($update)
             {
                 return true;
@@ -1296,7 +1244,7 @@ class filemanager_core extends Services_JSON
         }
         else
         {
-            $update = mysql_query("UPDATE filemanager_users SET is_block=0 WHERE id='$user_id'");
+            $update = $this->mysql_request("UPDATE filemanager_users SET is_block=0 WHERE id='$user_id'");
             if($update)
             {
                 return true;
@@ -1307,7 +1255,6 @@ class filemanager_core extends Services_JSON
             }
         }
     }
-
     public function page($page, $fullCount, $count_show)
     {
         if($count_show == "all")
@@ -1322,19 +1269,16 @@ class filemanager_core extends Services_JSON
         {
             $page = $this->pageCount;
         }
-
         if($page == 0 or $page < 0)
         {
             $page = 1;
         }
-
         if($page == 1 and $fullCount > $count_show)
         {
             $this->start = 0;
             $this->end = $count_show;
         }
         elseif($page == 1 and $fullCount < $count_show)
-
         {
             $this->start = 0;
             $this->end = $fullCount;
@@ -1353,7 +1297,6 @@ class filemanager_core extends Services_JSON
             }
         }
     }
-
     private function _numpage($co_tot,$co)
     {
         if ($co_tot == 0)
@@ -1361,7 +1304,6 @@ class filemanager_core extends Services_JSON
             $page = 1;
             return $page;
         }
-
         if($co > $co_tot)
         {
             $co_tot = $co;
@@ -1384,12 +1326,10 @@ class filemanager_core extends Services_JSON
             return ceil($page);
         }
     }
-
     public function get_base_root()
     {
         return realpath(ROOT_DIR_PATH);
     }
-
     public function check_base_root($newName)
     {
         if($newName != ROOT_DIR_PATH)
@@ -1410,7 +1350,6 @@ class filemanager_core extends Services_JSON
         {
             $check_address = realpath($newName);
         }
-
         $check_root = $this->get_base_root();
         if(strpos($check_address, $check_root) === FALSE)
         {
@@ -1421,12 +1360,10 @@ class filemanager_core extends Services_JSON
             return true;
         }
     }
-
     public function share_files($send_to, $emails, $subject, $from, $message, $file)
     {
         require_once 'filemanager_assets/PHPMailer/class.phpmailer.php';
         $phpMailer = new PHPMailer();
-
         if( defined( "IS_SMTP_USE" ) )
         {
             if( IS_SMTP_USE )
@@ -1443,7 +1380,6 @@ class filemanager_core extends Services_JSON
                 }
             }
         }
-
         $phpMailer->CharSet = 'UTF-8';
         $phpMailer->From = $from;
         $phpMailer->FromName = $from;
@@ -1480,8 +1416,6 @@ class filemanager_core extends Services_JSON
             echo "false";
         }
     }
-
-
     public function gravatar_src( $email, $size = 82 )
     {
         $email = trim($email);
@@ -1495,7 +1429,6 @@ class filemanager_core extends Services_JSON
         }
         return "http://www.gravatar.com/avatar/".$email_hash."?s=".$size.$custom_avatar;
     }
-
     public function create_breadcrumb( $path )
     {
         $path = realpath( $path );
@@ -1527,7 +1460,6 @@ class filemanager_core extends Services_JSON
         $breadcrumb .= '</ol>';
         echo $breadcrumb;
     }
-
     private function get_server_os()
     {
         if ( strtoupper( substr( PHP_OS, 0, 3 ) ) === 'WIN' ) {
@@ -1537,11 +1469,10 @@ class filemanager_core extends Services_JSON
             return '/';
         }
     }
-
     public function core_get_support_ext()
     {
         $content = array();
-        $select = mysql_query("SELECT * FROM filemanager_options WHERE option_name='allow_extensions'");
+        $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='allow_extensions'");
         while($row = mysql_fetch_array( $select ) )
         {
             if($row["option_name"] == "allow_extensions")
@@ -1551,9 +1482,7 @@ class filemanager_core extends Services_JSON
         }
         return $content;
     }
-
     /* SHARE SYSTEM */
-
     public function share_system_files( $path, $files, $desc, $user_id )
     {
         $check_path = ROOT_DIR_PATH.$path;
@@ -1573,12 +1502,11 @@ class filemanager_core extends Services_JSON
                 }
             }
         }
-        if( mysql_query( $insert ) ) {
+        if( $this->mysql_request( $insert ) ) {
             return true;
         }
         return false;
     }
-
     public function get_shared_files( $page, $user = "all", $role = 'admin' )
     {
         function pages( $co_tot, $co )
@@ -1617,14 +1545,14 @@ class filemanager_core extends Services_JSON
         if( $user != "all" ) {
             $user = (int) mysql_real_escape_string( $user );
             if( $role == 'user' ) {
-                $select = mysql_query( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares WHERE user_id='$user') AS total FROM filemanager_shares WHERE user_id='$user' ORDER BY date_added DESC LIMIT {$start}, {$end}" );
+                $select = $this->mysql_request( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares WHERE user_id='$user') AS total FROM filemanager_shares WHERE user_id='$user' ORDER BY date_added DESC LIMIT {$start}, {$end}" );
             }
             else {
-                $select = mysql_query( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares WHERE admin='$user') AS total FROM filemanager_shares WHERE admin='$user' ORDER BY date_added DESC LIMIT {$start}, {$end}" );
+                $select = $this->mysql_request( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares WHERE admin='$user') AS total FROM filemanager_shares WHERE admin='$user' ORDER BY date_added DESC LIMIT {$start}, {$end}" );
             }
         }
         else {
-            $select = mysql_query( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares) AS total FROM filemanager_shares ORDER BY date_added DESC LIMIT {$start}, {$end}" );
+            $select = $this->mysql_request( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares) AS total FROM filemanager_shares ORDER BY date_added DESC LIMIT {$start}, {$end}" );
         }
         $result = "";
         if( $select ) {
@@ -1658,13 +1586,11 @@ class filemanager_core extends Services_JSON
             }
             $result["pages"] = pages( $total, $per_page );
         }
-
         return $result;
     }
-
     private function get_share_user_info( $id ) {
         if( !isset( $this->share_users[$id]["fullname"] ) ) {
-            $select = mysql_query( "SELECT firstname, lastname, username, email FROM filemanager_users WHERE id='$id'" );
+            $select = $this->mysql_request( "SELECT firstname, lastname, username, email FROM filemanager_users WHERE id='$id'" );
             $row = mysql_fetch_array( $select, MYSQL_ASSOC );
             $this->share_users[$id]["fullname"] = $this->decode_me( $row["firstname"]." ".$row["lastname"] );
             $this->share_users[$id]["username"] = $this->decode_me( $row["username"] );
@@ -1672,21 +1598,19 @@ class filemanager_core extends Services_JSON
             $this->share_users[$id]["gravatar"] = $this->gravatar_src( $this->share_users[$id]["email"] );
         }
     }
-
     public function remove_share_file( $id )
     {
         $id = (int) mysql_real_escape_string( $id );
-        $delete = mysql_query( "DELETE FROM filemanager_shares WHERE id='$id'" );
+        $delete = $this->mysql_request( "DELETE FROM filemanager_shares WHERE id='$id'" );
         if( $delete ) {
             return true;
         }
         return false;
     }
-
     public function download_share_file( $id )
     {
         $id = (int) mysql_real_escape_string( $id );
-        $select = mysql_query( "SELECT file_path FROM filemanager_shares WHERE id='$id'" );
+        $select = $this->mysql_request( "SELECT file_path FROM filemanager_shares WHERE id='$id'" );
         if( $select ) {
             $row = mysql_fetch_array( $select, MYSQL_ASSOC );
             $file = $this->decode_me( $row["file_path"] );
@@ -1721,7 +1645,6 @@ class filemanager_core extends Services_JSON
             }
         }
     }
-
     /* USER REGISTER */
     private function register_user_dir($dir, $username)
     {
@@ -1741,7 +1664,6 @@ class filemanager_core extends Services_JSON
             return $this->register_user_dir($dir, $username);
         }
     }
-
     public function register_this_user($username, $email, $firstname, $lastname)
     {
         require_once 'option_class.php';
@@ -1770,7 +1692,7 @@ class filemanager_core extends Services_JSON
         $date = date("YmdHis");
         $deny_files = array();
         $activation_code = md5($username.$email.rand());
-        $insert = mysql_query("INSERT INTO filemanager_users (firstname, lastname, username, email, password, is_login, activation_key, is_block, dir_path, date_added) VALUES ('$firstname', '$lastname', '$username', '$email', '$password', 0, '$activation_code', 1, '$user_dir', '$date')");
+        $insert = $this->mysql_request("INSERT INTO filemanager_users (firstname, lastname, username, email, password, is_login, activation_key, is_block, dir_path, date_added) VALUES ('$firstname', '$lastname', '$username', '$email', '$password', 0, '$activation_code', 1, '$user_dir', '$date')");
         if($insert)
         {
             $user_id = mysql_insert_id();
@@ -1799,24 +1721,19 @@ class filemanager_core extends Services_JSON
                                     $filename = basename($_SERVER["PHP_SELF"]);
                                     $this_file_path = $_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
                                     $link = str_replace("filemanager_user/".$filename, "", $this_file_path);
-
                                     $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https' : 'http';
                                     preg_match("/^(".$protocol.":\/\/www\.)?([^\/]+)/i",
                                         $_SERVER['SERVER_NAME'], $matches);
                                     $host = $matches[2];
                                     preg_match("/[^\.\/]+\.[^\.\/]+$/", $host, $matches);
-
                                     $host = "noreply@".$host;
                                     $link = $protocol."://".$link."?activation_code=".$activation_code."&info=".md5($user_id);
-
                                     $headers = "From: " . $host . "\r\n";
                                     $headers .= "MIME-Version: 1.0\r\n";
                                     $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
                                     $message = "Hi ".$fullname."; <br> This is your File Manager <br /> username: ".$username." <br /> password: ".$email_pass." <br/> You can <a href=\"".$link."\">click here ( ".$link." )</a> to activate your account.<br> Please do not reply to this email.";
-
                                     require_once 'filemanager_assets/PHPMailer/class.phpmailer.php';
                                     $phpMailer = new PHPMailer();
-
                                     if( defined( "IS_SMTP_USE" ) )
                                     {
                                         if( IS_SMTP_USE )
@@ -1833,7 +1750,6 @@ class filemanager_core extends Services_JSON
                                             }
                                         }
                                     }
-
                                     $phpMailer->CharSet = 'UTF-8';
                                     $phpMailer->From = $host;
                                     $phpMailer->FromName = $host;
@@ -1841,7 +1757,6 @@ class filemanager_core extends Services_JSON
                                     $phpMailer->Subject = $subject;
                                     $phpMailer->IsHTML(true);
                                     $phpMailer->Body = $message;
-
                                     if( $phpMailer->Send() )
                                     {
                                         return true;
@@ -1893,18 +1808,16 @@ class filemanager_core extends Services_JSON
             return false;
         }
     }
-
     public function activate_user($key, $id)
     {
         $key = $this->encode_me($key);
         $id = $this->encode_me($id);
-        $select = mysql_query("SELECT id, dir_path, username, activation_key FROM filemanager_users WHERE MD5(id)='$id' AND activation_key='$key'");
+        $select = $this->mysql_request("SELECT id, dir_path, username, activation_key FROM filemanager_users WHERE MD5(id)='$id' AND activation_key='$key'");
         $num = mysql_num_rows($select);
         if($num <= 0)
         {
             return null;
         }
-
         while($row = mysql_fetch_array($select))
         {
             if($row["activation_key"] == $key and md5($row["id"]) == $id)
@@ -1942,7 +1855,7 @@ class filemanager_core extends Services_JSON
                 if($mkdir)
                 {
                     $update = "UPDATE filemanager_users SET activation_key='', is_block=0 WHERE id='$user_id'";
-                    if(mysql_query($update))
+                    if($this->mysql_request($update))
                     {
                         return true;
                     }
@@ -1961,21 +1874,14 @@ class filemanager_core extends Services_JSON
         return null;
     }
 }
-
 class filemanager extends Services_JSON
 {
     private $root;
-
     public $support_ext;
-
     private $sort;
-
     private $search;
-
     public $ignored;
-
     public $show_files_folders;
-
     function __construct( $path = "", $sort = "", $search = "" )
     {
         if( $path == "" and $sort == "" and $search == "" ) {
@@ -2014,8 +1920,6 @@ class filemanager extends Services_JSON
             }
         }
     }
-
-
     private function find_all_files($dir, $extensions, $search)
     {
         $root = scandir($dir);
@@ -2051,7 +1955,6 @@ class filemanager extends Services_JSON
             }
         }
     }
-
     private function findFiles($directory, $extensions = array())
     {
         if($this->check_path( $directory ) )
@@ -2087,7 +1990,6 @@ class filemanager extends Services_JSON
         }
         @$this->show_files_folders = array_keys($this->show_files_folders);
     }
-
     private function filter_search_str($txt)
     {
         $txt = str_replace("../", "", $txt);
@@ -2095,7 +1997,6 @@ class filemanager extends Services_JSON
         $txt = str_replace(".", "", $txt);
         return $txt;
     }
-
     public function sort_with_name( $array )
     {
         $new_arr = "";
@@ -2109,7 +2010,6 @@ class filemanager extends Services_JSON
         }
         return $new_arr;
     }
-
     public function curPageURL()
     {
         $pageURL = 'http';
@@ -2130,7 +2030,6 @@ class filemanager extends Services_JSON
         }
         return $pageURL;
     }
-
     public function formatBytes($path)
     {
         if( is_dir( $path ) )
@@ -2145,7 +2044,6 @@ class filemanager extends Services_JSON
         {
             $unit = intval(log($bytes, 1024));
             $units = array('B', 'KB', 'MB', 'GB');
-
             if (array_key_exists($unit, $units) === true)
             {
                 return sprintf('%d %s', $bytes / pow(1024, $unit), $units[$unit]);
@@ -2153,7 +2051,6 @@ class filemanager extends Services_JSON
         }
         return $bytes;
     }
-
     public function dirSize($directory)
     {
         $size = 0;
@@ -2162,12 +2059,10 @@ class filemanager extends Services_JSON
         }
         return $size;
     }
-
     protected function set_root_dir()
     {
         $this->root = realpath( ROOT_DIR_PATH );
     }
-
     protected function check_path( $path )
     {
         $path = realpath( $path );
@@ -2178,7 +2073,6 @@ class filemanager extends Services_JSON
             return true;
         }
     }
-
     protected function set_ignored()
     {
         $ignored = array(
@@ -2285,7 +2179,6 @@ class filemanager extends Services_JSON
         );
         $this->ignored = $ignored;
     }
-
     public function get_server_os()
     {
         if ( strtoupper( substr( PHP_OS, 0, 3 ) ) === 'WIN' ) {
@@ -2295,13 +2188,12 @@ class filemanager extends Services_JSON
             return '/';
         }
     }
-
     public function get_support_ext()
     {
         mysql_connect( DB_HOST, DB_USER, DB_PASS );
         mysql_select_db( DB_NAME );
         $content = array();
-        $select = mysql_query("SELECT * FROM filemanager_options WHERE option_name='allow_extensions'");
+        $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='allow_extensions'");
         while($row = mysql_fetch_array( $select ) )
         {
             if($row["option_name"] == "allow_extensions")
@@ -2312,7 +2204,6 @@ class filemanager extends Services_JSON
         return $content;
     }
 }
-
 class filemanager_backups extends filemanager_core
 {
     private $backup_dir = "filemanager_backups";
@@ -2346,7 +2237,6 @@ class filemanager_backups extends filemanager_core
         {
             $unit = intval(log($bytes, 1024));
             $units = array('B', 'KB', 'MB', 'GB');
-
             if (array_key_exists($unit, $units) === true)
             {
                 return sprintf('%d %s', $bytes / pow(1024, $unit), $units[$unit]);
@@ -2363,7 +2253,6 @@ class filemanager_backups extends filemanager_core
         }
         return $size;
     }
-
     public function remove_this_backup_file($name)
     {
         $filename = $this->backup_dir."/".$name;
@@ -2384,11 +2273,9 @@ class filemanager_backups extends filemanager_core
         }
     }
 }
-
 class fs extends filemanager
 {
     protected $base = null;
-
     protected function real($path) {
         $temp = false;
         if( $this->check_path( $path ) ) {
@@ -2401,14 +2288,12 @@ class fs extends filemanager
         }
         return $temp;
     }
-
     protected function path($id) {
         $id = str_replace('/', DIRECTORY_SEPARATOR, $id);
         $id = trim($id, DIRECTORY_SEPARATOR);
         $id = $this->real($this->base . DIRECTORY_SEPARATOR . $id);
         return $id;
     }
-
     protected function id($path) {
         $path = $this->real($path);
         $path = substr($path, strlen($this->base));
@@ -2416,13 +2301,11 @@ class fs extends filemanager
         $path = trim($path, '/');
         return strlen($path) ? $path : '/';
     }
-
     public function __construct($base) {
         parent::__construct();
         $this->base = $this->real($base);
         if(!$this->base) { throw new Exception('Base directory does not exist'); }
     }
-
     public function lst($id, $with_root = false) {
         $dir = $this->path($id);
         $lst = @scandir($dir);
@@ -2447,7 +2330,6 @@ class fs extends filemanager
         }
         return $res;
     }
-
     public function data($id) {
         if(strpos($id, ":")) {
             $id = array_map(array($this, 'id'), explode(':', $id));
@@ -2497,7 +2379,6 @@ class fs extends filemanager
         }
         throw new Exception('Not a valid selection: ' . $dir);
     }
-
     public function create($id, $name, $mkdir = false) {
         $dir = $this->path($id);
         if(preg_match('([^ a-zа-я-_0-9.]+)ui', $name) || !strlen($name)) {
@@ -2511,7 +2392,6 @@ class fs extends filemanager
         }
         return array('id' => $this->id($dir . DIRECTORY_SEPARATOR . $name));
     }
-
     public function rename($id, $name) {
         $dir = $this->path($id);
         if($dir === $this->base) {
@@ -2530,7 +2410,6 @@ class fs extends filemanager
         }
         return array('id' => $this->id($new));
     }
-
     public function remove($id) {
         $dir = $this->path($id);
         if($dir === $this->base) {
@@ -2547,7 +2426,6 @@ class fs extends filemanager
         }
         return array('status' => 'OK');
     }
-
     public function move($id, $par) {
         $dir = $this->path($id);
         $par = $this->path($par);
@@ -2557,7 +2435,6 @@ class fs extends filemanager
         rename($dir, $new);
         return array('id' => $this->id($new));
     }
-
     public function copy($id, $par) {
         $dir = $this->path($id);
         $par = $this->path($par);
@@ -2565,7 +2442,6 @@ class fs extends filemanager
         $new = array_pop($new);
         $new = $par . DIRECTORY_SEPARATOR . $new;
         if(is_file($new) || is_dir($new)) { throw new Exception('Path already exists: ' . $new); }
-
         if(is_dir($dir)) {
             mkdir($new);
             foreach(array_diff(scandir($dir), array(".", "..")) as $f) {
