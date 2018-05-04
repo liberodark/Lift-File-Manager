@@ -2,11 +2,12 @@
 if(session_id() == '') {
     session_start();
 }
+ini_set('error_reporting', -1);
 error_reporting(-1);
 ini_set('log_errors',TRUE);
-ini_set('html_errors',TRUE);
+ini_set('html_errors',true);
 ini_set('error_log','filemanager_error_log.txt');
-ini_set('display_errors',TRUE);
+ini_set('display_errors',true);
 
 
 if( !defined('DB_HOST') ) {
@@ -50,9 +51,18 @@ class filemanager_user_core extends Services_JSON
     function __construct()
     {
         try {
-          $this->db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8', DB_USER, DB_PASS);
+            $this->db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8', DB_USER, DB_PASS);
         } catch (Exception $exception){
-          return $exception->getMessage();
+            return $exception->getMessage();
+        }
+    }
+
+    public function mysql_request($query) {
+        try {
+            $request_response = $this->db->query($query);
+            return $request_response;
+        } catch (Exception $exception){
+            return $exception->getMessage();
         }
     }
 
@@ -172,8 +182,8 @@ class filemanager_user_core extends Services_JSON
     function get_option($name)
     {
         $content = array();
-        $select = mysql_query("SELECT * FROM filemanager_options WHERE option_name='$name'");
-        while($row = mysql_fetch_array($select))
+        $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='$name'");
+        while($row = $select->fetchAll())
         {
             $content = $this->decode($row["option_content"]);
         }
@@ -187,9 +197,9 @@ class filemanager_user_core extends Services_JSON
             $ck_id = $_SESSION['filemanager_user'];
             $id = $_SESSION["filemanager_who_is_it"];
             $query = "SELECT id, is_login, ck_id FROM filemanager_users WHERE is_login='1' AND ck_id='$ck_id' AND id='$id' LIMIT 1";
-            if($select = mysql_query($query))
+            if($select = $this->mysql_request($query))
             {
-                $result = mysql_fetch_array($select, MYSQL_ASSOC);
+                $result = $select->fetchAll();
                 if($result["ck_id"] == $ck_id and $result["is_login"] == "1" and $result["id"] == $id)
                 {
                     $this->role = "user";
@@ -218,10 +228,10 @@ class filemanager_user_core extends Services_JSON
         $return["status"] = false;
         $return["msg"] = "";
         $select_query = "SELECT id,is_login,email,username,password,luck_count,luck_time,activation_key FROM  filemanager_users WHERE username='$username' OR email='$username'";
-        if($select = mysql_query($select_query))
+        if($select = $this->mysql_request($select_query))
         {
             $username = $this->decode_me($username);
-            while ($result = mysql_fetch_array($select))
+            while ($result = $select->fetchAll())
             {
                 if($result["luck_count"] >= 4)
                 {
@@ -244,7 +254,7 @@ class filemanager_user_core extends Services_JSON
                         $_SESSION["filemanager_who_is_it"] = $id;
                         $username = $this->encode_me($username);
                         $update_query = "UPDATE filemanager_users SET is_login='1', luck_count=0, ck_id='$ck_id' WHERE (username='$username' OR email='$username') AND id='$id'";
-                        if(mysql_query($update_query))
+                        if($this->mysql_request($update_query))
                         {
                             $this->role = "user";
                             $return["status"] = true;
@@ -308,7 +318,7 @@ class filemanager_user_core extends Services_JSON
         {
             $count++;
             $date = date("YmdHis");
-            $update = mysql_query("UPDATE filemanager_users SET luck_count='$count', luck_time='$date' WHERE id='$id'");
+            $update = $this->mysql_request("UPDATE filemanager_users SET luck_count='$count', luck_time='$date' WHERE id='$id'");
             return false;
         }
         else
@@ -322,15 +332,15 @@ class filemanager_user_core extends Services_JSON
         $check_id = $_SESSION["filemanager_user"];
         $id = $_SESSION["filemanager_who_is_it"];
         $select_query = "SELECT id, is_login, ck_id FROM filemanager_users WHERE is_login='1' AND ck_id='$check_id' AND id='$id'";
-        if($select = mysql_query($select_query))
+        if($select = $this->mysql_request($select_query))
         {
-            while ($result = mysql_fetch_array($select))
+            while ($result = $select->fetchAll())
             {
                 if($result["is_login"] == "1" and $result["ck_id"] == $check_id and $result["id"] == $id)
                 {
                     $date = date("YmdHis");
                     $update_query = "UPDATE filemanager_users SET is_login='0', ck_id='' WHERE ck_id='$check_id' AND id='$id'";
-                    if(mysql_query($update_query))
+                    if($this->mysql_request($update_query))
                     {
                         unset($_SESSION["filemanager_user"]);
                         unset($_SESSION["filemanager_who_is_it"]);
@@ -365,11 +375,11 @@ class filemanager_user_core extends Services_JSON
         $result["status"] = false;
         $result["msg"] = "Forgot_Pass_Error_1";
         $check = $this->encode_me($email);
-        $select = mysql_query("SELECT id, firstname, lastname, email, password, activation_key FROM filemanager_users WHERE email='$check'");
-        $num = mysql_num_rows($select);
+        $select = $this->mysql_request("SELECT id, firstname, lastname, email, password, activation_key FROM filemanager_users WHERE email='$check'");
+        $num = $select->rowCount();
         if($num > 0)
         {
-            while($row = mysql_fetch_array($select))
+            while($row = $select->fetchAll())
             {
                 if($row["activation_key"] == '' or $row['activation_key'] == NULL)
                 {
@@ -379,7 +389,7 @@ class filemanager_user_core extends Services_JSON
                         $newPass = $newPass.rand();
                         $newPass_save = md5($newPass);
                         $id = $row["id"];
-                        $update = mysql_query("UPDATE filemanager_users SET password='$newPass_save' WHERE id='$id'");
+                        $update = $this->mysql_request("UPDATE filemanager_users SET password='$newPass_save' WHERE id='$id'");
                         if($update)
                         {
                             $to = $email;
@@ -460,8 +470,8 @@ class filemanager_user_core extends Services_JSON
         {
             $ck_id = $_SESSION["filemanager_user"];
             $id = $_SESSION["filemanager_who_is_it"];
-            $query = mysql_query("SELECT * FROM filemanager_users WHERE is_login='1' AND ck_id='$ck_id' AND id='$id'");
-            while ($row = mysql_fetch_array($query))
+            $query = $this->mysql_request("SELECT * FROM filemanager_users WHERE is_login='1' AND ck_id='$ck_id' AND id='$id'");
+            while ($row = $query->fetchAll())
             {
                 if($row["ck_id"] == $ck_id and $row["id"] == $id)
                 {
@@ -473,10 +483,10 @@ class filemanager_user_core extends Services_JSON
                     $this->is_block = $row["is_block"];
                     if( isset( $_GET["switch"] ) or ( isset($_POST["extra_dir_show"]) and @$_POST["extra_dir_show"] != 0 ) ) {
                         if( isset( $_GET["switch"] ) ) {
-                            $switch = (int) mysql_real_escape_string( $_GET["switch"] );
+                            $switch = (int) $this->quote( $_GET["switch"] );
                         }
                         else {
-                            $switch = (int) mysql_real_escape_string( $_POST["extra_dir_show"] );
+                            $switch = (int) $this->quote( $_POST["extra_dir_show"] );
                         }
                         $this->user_dir = $this->switch_dir( $row["id"], $switch );
                         if( $this->user_dir == "" ) {
@@ -504,10 +514,10 @@ class filemanager_user_core extends Services_JSON
 
     private function switch_dir( $user_id, $dir_id )
     {
-        $select = mysql_query( "SELECT dir_path FROM filemanager_extra_dir WHERE id='$dir_id' AND user_id='$user_id'" );
+        $select = $this->mysql_request( "SELECT dir_path FROM filemanager_extra_dir WHERE id='$dir_id' AND user_id='$user_id'" );
         if( $select ) {
-            if( @mysql_num_rows( $select ) > 0 ) {
-                $row = mysql_fetch_array( $select, MYSQL_ASSOC );
+            if( @$this->mysql_request( $select ) > 0 ) {
+                $row = $select->fetchAll();
                 return $this->decode_me( $row["dir_path"] );
             }
         }
@@ -516,9 +526,9 @@ class filemanager_user_core extends Services_JSON
 
     public function set_user_tabs( $user_id )
     {
-        $select = mysql_query( "SELECT * FROM filemanager_extra_dir WHERE user_id='$user_id'" );
+        $select = $this->mysql_request( "SELECT * FROM filemanager_extra_dir WHERE user_id='$user_id'" );
         if( $select ) {
-            while( $row = mysql_fetch_array( $select ) ) {
+            while( $row = $select->fetchAll()) {
                 $this->user_tabs["path"][] = $this->decode_me( $row["dir_path"] );
                 $this->user_tabs["id"][] = $this->decode_me( $row["id"] );
             }
@@ -539,8 +549,8 @@ class filemanager_user_core extends Services_JSON
     public function get_mime_type()
     {
         $content = array();
-        $select = mysql_query("SELECT * FROM filemanager_options WHERE option_name='allow_uploads_mime_type'");
-        while($row = mysql_fetch_array($select))
+        $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='allow_uploads_mime_type'");
+        while($row = $select->fetchAll())
         {
             if($row["option_name"] == "allow_uploads_mime_type")
             {
@@ -553,16 +563,16 @@ class filemanager_user_core extends Services_JSON
 
     public function editProfile($id, $username, $firstname, $lastname, $email)
     {
-        $select = mysql_query("SELECT id FROM filemanager_users WHERE (username='$username' OR email='$email') AND id<>'$id'");
-        $num = mysql_num_rows($select);
+        $select = $this->mysql_request("SELECT id FROM filemanager_users WHERE (username='$username' OR email='$email') AND id<>'$id'");
+        $num = $select->rowCount();
         if($num > 0)
         {
             echo "null";
             exit;
         }
 
-        $select = mysql_query("SELECT id FROM filemanager_db WHERE username='$username' OR email='$email'");
-        $num = mysql_num_rows($select);
+        $select = $this->mysql_request("SELECT id FROM filemanager_db WHERE username='$username' OR email='$email'");
+        $num = $select->rowCount();
         if($num > 0)
         {
             echo "null";
@@ -571,7 +581,7 @@ class filemanager_user_core extends Services_JSON
 
         if($this->isLogin())
         {
-            $update = mysql_query("UPDATE filemanager_users SET username='$username', firstname='$firstname', lastname='$lastname', email='$email' WHERE id='$id'");
+            $update = $this->mysql_request("UPDATE filemanager_users SET username='$username', firstname='$firstname', lastname='$lastname', email='$email' WHERE id='$id'");
             if($update)
             {
                 echo 'true';
@@ -592,7 +602,7 @@ class filemanager_user_core extends Services_JSON
         if($this->isLogin())
         {
             $new = md5($user_newPass);
-            $update = mysql_query("UPDATE filemanager_users SET password='$new' WHERE id='$id'");
+            $update = $this->mysql_request("UPDATE filemanager_users SET password='$new' WHERE id='$id'");
             if ($update)
             {
                 echo 'true';
@@ -921,13 +931,13 @@ class filemanager_user_core extends Services_JSON
         $email = $this->encode_me($email);
         if($user_id == 0)
         {
-            $select = mysql_query("SELECT username, email, id FROM filemanager_users WHERE username='$username' OR email='$email'");
+            $select = $this->mysql_request("SELECT username, email, id FROM filemanager_users WHERE username='$username' OR email='$email'");
         }
         else
         {
-            $select = mysql_query("SELECT username, email, id FROM filemanager_users WHERE (username='$username' OR email='$email') AND id<>'$user_id'");
+            $select = $this->mysql_request("SELECT username, email, id FROM filemanager_users WHERE (username='$username' OR email='$email') AND id<>'$user_id'");
         }
-        while($row = mysql_fetch_array($select))
+        while($row = $select->fetchAll())
         {
             if($row["username"] == $username and $row["id"] != $user_id)
             {
@@ -941,8 +951,8 @@ class filemanager_user_core extends Services_JSON
                 exit();
             }
         }
-        $select = mysql_query("SELECT username, email FROM filemanager_db WHERE username='$username' OR email='$email'");
-        while($row = mysql_fetch_array($select))
+        $select = $this->mysql_request("SELECT username, email FROM filemanager_db WHERE username='$username' OR email='$email'");
+        while($row = $select->fetchAll())
         {
             if($row["username"] == $username)
             {
@@ -1006,7 +1016,7 @@ class filemanager_user_core extends Services_JSON
         $date = date("YmdHis");
         $deny_files = array();
         $activation_code = md5($username.$email.rand());
-        $insert = mysql_query("INSERT INTO filemanager_users (firstname, lastname, username, email, password, is_login, activation_key, is_block, dir_path, date_added) VALUES ('$firstname', '$lastname', '$username', '$email', '$password', 0, '$activation_code', 1, '$user_dir', '$date')");
+        $insert = $this->mysql_request("INSERT INTO filemanager_users (firstname, lastname, username, email, password, is_login, activation_key, is_block, dir_path, date_added) VALUES ('$firstname', '$lastname', '$username', '$email', '$password', 0, '$activation_code', 1, '$user_dir', '$date')");
         if($insert)
         {
             $user_id = mysql_insert_id();
@@ -1135,7 +1145,7 @@ class filemanager_user_core extends Services_JSON
 
     private function delete_user($user_id)
     {
-        $delete = mysql_query("DELETE FROM filemanager_users WHERE id='$user_id'");
+        $delete = $this->mysql_request("DELETE FROM filemanager_users WHERE id='$user_id'");
         if($delete)
         {
             require_once 'filemanager_user/option_class.php';
@@ -1164,14 +1174,14 @@ class filemanager_user_core extends Services_JSON
     {
         $key = $this->encode_me($key);
         $id = $this->encode_me($id);
-        $select = mysql_query("SELECT id, dir_path, username, activation_key FROM filemanager_users WHERE MD5(id)='$id' AND activation_key='$key'");
-        $num = mysql_num_rows($select);
+        $select = $this->mysql_request("SELECT id, dir_path, username, activation_key FROM filemanager_users WHERE MD5(id)='$id' AND activation_key='$key'");
+        $num = $select->rowCount();
         if($num <= 0)
         {
             return null;
         }
 
-        while($row = mysql_fetch_array($select))
+        while($row = $select->fetchAll())
         {
             if($row["activation_key"] == $key and md5($row["id"]) == $id)
             {
@@ -1181,10 +1191,10 @@ class filemanager_user_core extends Services_JSON
                 $mkdir = false;
                 if(!is_dir($user_dir))
                 {
-                     if(@mkdir($user_dir))
-                     {
-                         $mkdir = true;
-                     }
+                    if(@mkdir($user_dir))
+                    {
+                        $mkdir = true;
+                    }
                 }
                 else
                 {
@@ -1208,7 +1218,7 @@ class filemanager_user_core extends Services_JSON
                 if($mkdir)
                 {
                     $update = "UPDATE filemanager_users SET activation_key='', is_block=0 WHERE id='$user_id'";
-                    if(mysql_query($update))
+                    if($this->mysql_request($update))
                     {
                         return true;
                     }
@@ -1554,7 +1564,7 @@ class filemanager_user_core extends Services_JSON
                 }
             }
         }
-        if( mysql_query( $insert ) ) {
+        if( $this->mysql_request( $insert ) ) {
             return true;
         }
         return false;
@@ -1592,27 +1602,27 @@ class filemanager_user_core extends Services_JSON
             }
         }
         $per_page = 10;
-        $page = (int) mysql_real_escape_string( $page );
+        $page = (int) $this->quote( $page );
         $start = ( $page - 1 ) * $per_page;
         $end = $per_page;
 
         if( $user != "all" ) {
-            $user = (int) mysql_real_escape_string( $user );
+            $user = (int) $this->quote( $user );
             if( $role == 'user' ) {
-                $select = mysql_query( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares WHERE user_id='$user') AS total FROM filemanager_shares WHERE user_id='$user' ORDER BY date_added DESC LIMIT {$start}, {$end}" );
+                $select = $this->mysql_request( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares WHERE user_id='$user') AS total FROM filemanager_shares WHERE user_id='$user' ORDER BY date_added DESC LIMIT {$start}, {$end}" );
             }
             else {
-                $select = mysql_query( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares WHERE admin='$user') AS total FROM filemanager_shares WHERE admin='$user' ORDER BY date_added DESC LIMIT {$start}, {$end}" );
+                $select = $this->mysql_request( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares WHERE admin='$user') AS total FROM filemanager_shares WHERE admin='$user' ORDER BY date_added DESC LIMIT {$start}, {$end}" );
             }
         }
         else {
-            $select = mysql_query( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares) AS total FROM filemanager_shares ORDER BY date_added DESC LIMIT {$start}, {$end}" );
+            $select = $this->mysql_request( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares) AS total FROM filemanager_shares ORDER BY date_added DESC LIMIT {$start}, {$end}" );
         }
         $result = "";
 
         if( $select ) {
             $total = 0;
-            while( $row = mysql_fetch_array( $select ) ) {
+            while( $row = $select->fetchAll() ) {
                 $result["id"][] = $row["id"];
                 $result["role"][] = $row["role"];
                 if( $row["role"] == "user" ) {
@@ -1650,8 +1660,8 @@ class filemanager_user_core extends Services_JSON
     private function get_share_user_info( $id, $role ) {
         if( $role == "user" ) {
             if( !isset( $this->share_users[$id]["fullname"] ) ) {
-                $select = mysql_query( "SELECT firstname, lastname, username, email FROM filemanager_users WHERE id='$id'" );
-                $row = mysql_fetch_array( $select, MYSQL_ASSOC );
+                $select = $this->mysql_request( "SELECT firstname, lastname, username, email FROM filemanager_users WHERE id='$id'" );
+                $row = $select->fetchAll();
                 $this->share_users[$id]["fullname"] = $this->decode_me( $row["firstname"]." ".$row["lastname"] );
                 $this->share_users[$id]["username"] = $this->decode_me( $row["username"] );
                 $this->share_users[$id]["email"] = $this->decode_me( $row["email"] );
@@ -1660,8 +1670,8 @@ class filemanager_user_core extends Services_JSON
         }
         else {
             if( !isset( $this->share_users["admin".$id]["fullname"] ) ) {
-                $select = mysql_query( "SELECT firstname, lastname, username, email FROM filemanager_db WHERE id='$id'" );
-                $row = mysql_fetch_array( $select, MYSQL_ASSOC );
+                $select = $this->mysql_request( "SELECT firstname, lastname, username, email FROM filemanager_db WHERE id='$id'" );
+                $row = $select->fetchAll();
                 $this->share_users["admin".$id]["fullname"] = $this->decode_me( $row["firstname"]." ".$row["lastname"] );
                 $this->share_users["admin".$id]["username"] = $this->decode_me( $row["username"] );
                 $this->share_users["admin".$id]["email"] = $this->decode_me( $row["email"] );
@@ -1672,9 +1682,9 @@ class filemanager_user_core extends Services_JSON
 
     public function remove_share_file( $id, $user_id )
     {
-        $id = (int) mysql_real_escape_string( $id );
-        $user_id = (int) mysql_real_escape_string( $user_id );
-        $delete = mysql_query( "DELETE FROM filemanager_shares WHERE id='$id' AND user_id='$user_id'" );
+        $id = (int) $this->quote( $id );
+        $user_id = (int) $this->quote( $user_id );
+        $delete = $this->mysql_request( "DELETE FROM filemanager_shares WHERE id='$id' AND user_id='$user_id'" );
         if( $delete ) {
             return true;
         }
@@ -1683,10 +1693,10 @@ class filemanager_user_core extends Services_JSON
 
     public function download_share_file( $id )
     {
-        $id = (int) mysql_real_escape_string( $id );
-        $select = mysql_query( "SELECT file_path FROM filemanager_shares WHERE id='$id'" );
+        $id = (int) $this->quote( $id );
+        $select = $this->mysql_request( "SELECT file_path FROM filemanager_shares WHERE id='$id'" );
         if( $select ) {
-            $row = mysql_fetch_array( $select, MYSQL_ASSOC );
+            $row = $select->fetchAll();
             $file = $this->system_root_dir.$this->decode_me( $row["file_path"] );
             if( is_file( $file ) ) {
                 header('Content-Description: File Transfer');
