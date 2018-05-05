@@ -1369,7 +1369,6 @@ if ( $core->isLogin() and isset( $load_modals ) ) {
                 },
                 function(data,status)
                 {
-                    console.log(data)
                     if(status == "success")
                     {
                         if(data == "true")
