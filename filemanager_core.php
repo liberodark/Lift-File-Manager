@@ -241,23 +241,26 @@ class filemanager_core extends Services_JSON
     {
         $check_id = $_SESSION["filemanager_admin"];
         $select_query = "SELECT is_login, ck_id FROM filemanager_db WHERE is_login='1' AND ck_id='$check_id'";
-        if($select = $this->mysql_request($select_query)){
-            while ($result = $select->fetchAll()) {
-                if($result["is_login"] == "1" and $result["ck_id"] == $check_id){
-                    $date = date("YmdHis");
-                    $update_query = "UPDATE filemanager_db SET is_login='0', ck_id='' WHERE ck_id='$check_id'";
-                    if($this->mysql_request($update_query)){
-                        $_SESSION["filemanager_admin"] = "logout";
-                        unset($_SESSION["filemanager_admin"]);
-                        $loggout = true;
-                        return $loggout;
-                    }else{
-                        $loggout = false;
-                        return $loggout;
-                    }
+        $q = $this->db->prepare($select_query);
+        $q->execute();
+        $result_find = $q->fetchAll();
+
+        if($result_find){
+            $result = $result_find["0"];
+            if($result["is_login"] == "1" and $result["ck_id"] == $check_id){
+                $date = date("YmdHis");
+                $update_query = "UPDATE filemanager_db SET is_login='0', ck_id='' WHERE ck_id='$check_id'";
+                if($this->mysql_request($update_query)){
+                    $_SESSION["filemanager_admin"] = "logout";
+                    unset($_SESSION["filemanager_admin"]);
+                    $loggout = true;
+                    return $loggout;
                 }else{
                     $loggout = false;
+                    return $loggout;
                 }
+            }else{
+                $loggout = false;
             }
             if(@$loggout != true){
                 return $loggout;
@@ -1798,7 +1801,7 @@ class filemanager extends Services_JSON
             function glob_recursive($directory, &$directories = [], $search)
             {
                 foreach (glob($directory, GLOB_ONLYDIR | GLOB_NOSORT) as $folder) {
-                    $directories[] = $folder; // de toute facon je vais aller mo coucher.. je verrais ca demain ^^ 
+                    $directories[] = $folder; // de toute facon je vais aller mo coucher.. je verrais ca demain ^^
                     glob_recursive("{$folder}/*", $directories);
                 }
             }

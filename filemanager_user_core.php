@@ -221,75 +221,58 @@ class filemanager_user_core extends Services_JSON
         }
     }
 
-    public function login($username,$password)
+    public function login($username, $password)
     {
         $password = md5($password);
         $username = $this->encode_me($username);
         $return["status"] = false;
         $return["msg"] = "";
-        $select_query = "SELECT id,is_login,email,username,password,luck_count,luck_time,activation_key FROM  filemanager_users WHERE username='$username' OR email='$username'";
-        if($select = $this->mysql_request($select_query))
-        {
+        $select_query = "SELECT id,is_login,email,username,password,ck_id,luck_count,luck_time FROM filemanager_db WHERE username='$username' OR email='$username'";
+        $q = $this->db->prepare($select_query);
+        $q->execute();
+        $result_find = $q->fetchAll();
+
+        if($result_find){
             $username = $this->decode_me($username);
-            while ($result = $select->fetchAll())
-            {
-                if($result["luck_count"] >= 4)
-                {
-                    $check_luck = $this->check_luck_login($result["id"], $result["luck_time"]);
-                    if($check_luck)
-                    {
+            $result = $result_find["0"];
+            var_dump($result);
+
+            if($result["luck_count"] >= 4){
+                $check_luck = $this->check_luck_login($result["id"], $result["luck_time"]);
+                if($check_luck){
+                    $return["msg"] = "blocked";
+                    return $return;
+                }
+            }
+
+            if(($this->decode_me($result["username"]) == $username or $this->decode_me($result["email"]) == $username) and $result["password"] == $password){
+                $login = true;
+                $date = date("YmdHis");
+                $ck_id = md5($result["email"] . rand());
+                $_SESSION["filemanager_admin"] = $ck_id;
+                $id = $result["id"];
+                $username = $this->encode_me($username);
+                $update_query = "UPDATE filemanager_db SET is_login='1', ck_id='$ck_id', luck_count=0 WHERE username='$username' OR email='$username' AND id='$id'";
+                if($this->mysql_request($update_query)){
+                    $return["status"] = true;
+                }else{
+                    $return["msg"] = "check";
+                }
+            }else{
+                if(($this->decode_me($result["username"]) == $username or $this->decode_me($result["email"]) == $username) and $result["password"] != $password){
+                    $check_luck = $this->luck_this_user($result["id"], $result["luck_count"]);
+                    if($check_luck){
                         $return["msg"] = "blocked";
                         return $return;
                     }
                 }
-                if(($this->decode_me($result["username"]) == $username or $this->decode_me($result["email"]) == $username) and $result["password"] == $password)
-                {
-                    if($result["activation_key"] == '' or $result["activation_key"] == NULL)
-                    {
-                        $login = true;
-                        $id = $result["id"];
-                        $date = date("YmdHis");
-                        $ck_id = md5($username.$id.rand());
-                        $_SESSION["filemanager_user"] = $ck_id;
-                        $_SESSION["filemanager_who_is_it"] = $id;
-                        $username = $this->encode_me($username);
-                        $update_query = "UPDATE filemanager_users SET is_login='1', luck_count=0, ck_id='$ck_id' WHERE (username='$username' OR email='$username') AND id='$id'";
-                        if($this->mysql_request($update_query))
-                        {
-                            $this->role = "user";
-                            $return["status"] = true;
-                        }
-                        else
-                        {
-                            $return["msg"] = "check";
-                        }
-                    }
-                    else
-                    {
-                        $return["msg"] = "check";
-                    }
-                }
-                else
-                {
-                    if(($this->decode_me($result["username"]) == $username or $this->decode_me($result["email"]) == $username) and $result["password"] != $password)
-                    {
-                        $check_luck = $this->luck_this_user($result["id"], $result["luck_count"]);
-                        if($check_luck)
-                        {
-                            $return["msg"] = "blocked";
-                            return $return;
-                        }
-                    }
-                    $login = false;
-                }
+                $login = false;
             }
-            if(@$login != true)
-            {
+
+            if(@$login != true){
                 $return["msg"] = "check";
             }
-        }
-        else
-        {
+        }else{
             $return["msg"] = "check";
         }
         return $return;
@@ -332,32 +315,34 @@ class filemanager_user_core extends Services_JSON
         $check_id = $_SESSION["filemanager_user"];
         $id = $_SESSION["filemanager_who_is_it"];
         $select_query = "SELECT id, is_login, ck_id FROM filemanager_users WHERE is_login='1' AND ck_id='$check_id' AND id='$id'";
-        if($select = $this->mysql_request($select_query))
-        {
-            while ($result = $select->fetchAll())
+        $q = $this->db->prepare($select_query);
+        $q->execute();
+        $result_find = $q->fetchAll();
+
+        if($result_find){
+            $result = $result_find["0"];
+
+            if($result["is_login"] == "1" and $result["ck_id"] == $check_id and $result["id"] == $id)
             {
-                if($result["is_login"] == "1" and $result["ck_id"] == $check_id and $result["id"] == $id)
+                $date = date("YmdHis");
+                $update_query = "UPDATE filemanager_users SET is_login='0', ck_id='' WHERE ck_id='$check_id' AND id='$id'";
+                if($this->mysql_request($update_query))
                 {
-                    $date = date("YmdHis");
-                    $update_query = "UPDATE filemanager_users SET is_login='0', ck_id='' WHERE ck_id='$check_id' AND id='$id'";
-                    if($this->mysql_request($update_query))
-                    {
-                        unset($_SESSION["filemanager_user"]);
-                        unset($_SESSION["filemanager_who_is_it"]);
-                        if( isset( $_SESSION["lift_file_manager_list_of_files"] ) ) unset( $_SESSION["lift_file_manager_list_of_files"] );
-                        $loggout = true;
-                        return $loggout;
-                    }
-                    else
-                    {
-                        $loggout = false;
-                        return $loggout;
-                    }
+                    unset($_SESSION["filemanager_user"]);
+                    unset($_SESSION["filemanager_who_is_it"]);
+                    if( isset( $_SESSION["lift_file_manager_list_of_files"] ) ) unset( $_SESSION["lift_file_manager_list_of_files"] );
+                    $loggout = true;
+                    return $loggout;
                 }
                 else
                 {
                     $loggout = false;
+                    return $loggout;
                 }
+            }
+            else
+            {
+                $loggout = false;
             }
             if(@$loggout != true)
             {
