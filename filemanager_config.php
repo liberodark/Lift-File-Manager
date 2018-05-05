@@ -45,4 +45,5 @@ define("ROOT_UPLOAD_PATH", "./upload/");
 /* V2.0.0 => V3.0.0 OR Change root and set it with users and share files*/
 define( "CHANGE_ROOT", false );
 define( "LAST_ROOT_DIR_PATH", "../" ); // If you are update from version 2.X.X to V3.X.X please set it "../" else set with your last ROOT_DIR_PATH
+
 ?>
