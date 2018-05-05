@@ -80,8 +80,7 @@ class filemanager_core extends Services_JSON
     {
         if(isset($_SESSION['filemanager_admin']))
         {
-            // $ck_id = $_SESSION['filemanager_admin'];
-            $ck_id = "1";
+            $ck_id = $_SESSION['filemanager_admin'];
             $query = "SELECT is_login,ck_id FROM filemanager_db WHERE is_login='1' AND ck_id='$ck_id' LIMIT 1";
             if($select = $this->mysql_request($query))
             {
@@ -674,7 +673,7 @@ class filemanager_core extends Services_JSON
     {
         $content = array();
         $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='allow_uploads'");
-        while($row = mysql_fetch_array($select))
+        while($row = $select->fetchAll())
         {
             if($row["option_name"] == "allow_uploads")
             {
@@ -687,7 +686,7 @@ class filemanager_core extends Services_JSON
     {
         $content = array();
         $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='allow_uploads_mime_type'");
-        while($row = mysql_fetch_array($select))
+        while($row = $select->fetchAll())
         {
             if($row["option_name"] == "allow_uploads_mime_type")
             {
@@ -708,7 +707,7 @@ class filemanager_core extends Services_JSON
         {
             $select = $this->mysql_request("SELECT username, email, id FROM filemanager_users WHERE (username='$username' OR email='$email') AND id<>'$user_id'");
         }
-        while($row = mysql_fetch_array($select))
+        while($row = $select->fetchAll())
         {
             if($row["username"] == $username and $row["id"] != $user_id)
             {
@@ -722,7 +721,7 @@ class filemanager_core extends Services_JSON
             }
         }
         $select = $this->mysql_request("SELECT username, email FROM filemanager_db WHERE username='$username' OR email='$email'");
-        while($row = mysql_fetch_array($select))
+        while($row = $select->fetchAll())
         {
             if($row["username"] == $username)
             {
@@ -928,10 +927,10 @@ class filemanager_core extends Services_JSON
     private function delete_tickets_of_user($userId)
     {
         $select = $this->mysql_request("SELECT id FROM filemanager_tickets WHERE userId='$userId'");
-        $num = mysql_num_rows($select);
+        $num = $select->rowCount();
         if($num > 0)
         {
-            while($row = mysql_fetch_array($select))
+            while($row = $select->fetchAll())
             {
                 $id = $row["id"];
                 $this->mysql_request("DELETE FROM filemanager_tickets WHERE id='$id' OR parentId='$id'");
@@ -1107,7 +1106,7 @@ class filemanager_core extends Services_JSON
         {
             require_once 'option_class.php';
             $option = new option_class();
-            while($row = mysql_fetch_array($select))
+            while($row = $select->fetchAll())
             {
                 $users["id"][] = $row["id"];
                 $users["firstname"][] = $this->decode_me($row["firstname"]);
@@ -1200,7 +1199,7 @@ class filemanager_core extends Services_JSON
         {
             require_once 'option_class.php';
             $option = new option_class();
-            $row = mysql_fetch_array( $select, MYSQL_ASSOC );
+            $row = $select->fetchAll();
             $users["id"] = $row["id"];
             $users["firstname"] = $this->decode_me($row["firstname"]);
             $users["lastname"] = $this->decode_me($row["lastname"]);
@@ -1222,7 +1221,7 @@ class filemanager_core extends Services_JSON
         $select = $this->mysql_request( "SELECT dir_path FROM filemanager_extra_dir WHERE user_id='$user_id'" );
         $dirs = array();
         if( $select ) {
-            while( $row = mysql_fetch_array( $select ) ) {
+            while( $row = $select->fetchAll() ) {
                 $dirs[] = $this->decode_me( $row["dir_path"] );
             }
         }
@@ -1473,7 +1472,7 @@ class filemanager_core extends Services_JSON
     {
         $content = array();
         $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='allow_extensions'");
-        while($row = mysql_fetch_array( $select ) )
+        while($row = $select->fetchAll() )
         {
             if($row["option_name"] == "allow_extensions")
             {
@@ -1539,11 +1538,11 @@ class filemanager_core extends Services_JSON
             }
         }
         $per_page = 10;
-        $page = (int) mysql_real_escape_string( $page );
+        $page = (int) $this->quote( $page );
         $start = ( $page - 1 ) * $per_page;
         $end = $per_page;
         if( $user != "all" ) {
-            $user = (int) mysql_real_escape_string( $user );
+            $user = (int) $this->quote( $user );
             if( $role == 'user' ) {
                 $select = $this->mysql_request( "SELECT *, (SELECT COUNT(*) FROM filemanager_shares WHERE user_id='$user') AS total FROM filemanager_shares WHERE user_id='$user' ORDER BY date_added DESC LIMIT {$start}, {$end}" );
             }
@@ -1557,7 +1556,7 @@ class filemanager_core extends Services_JSON
         $result = "";
         if( $select ) {
             $total = 0;
-            while( $row = mysql_fetch_array( $select ) ) {
+            while( $row = $select->fetchAll() ) {
                 $result["id"][] = $row["id"];
                 $result["role"][] = $row["role"];
                 if( $row["role"] == "user" ) {
@@ -1591,7 +1590,7 @@ class filemanager_core extends Services_JSON
     private function get_share_user_info( $id ) {
         if( !isset( $this->share_users[$id]["fullname"] ) ) {
             $select = $this->mysql_request( "SELECT firstname, lastname, username, email FROM filemanager_users WHERE id='$id'" );
-            $row = mysql_fetch_array( $select, MYSQL_ASSOC );
+            $row = $select->fetchAll();
             $this->share_users[$id]["fullname"] = $this->decode_me( $row["firstname"]." ".$row["lastname"] );
             $this->share_users[$id]["username"] = $this->decode_me( $row["username"] );
             $this->share_users[$id]["email"] = $this->decode_me( $row["email"] );
@@ -1600,7 +1599,7 @@ class filemanager_core extends Services_JSON
     }
     public function remove_share_file( $id )
     {
-        $id = (int) mysql_real_escape_string( $id );
+        $id = (int) $this->quote( $id );
         $delete = $this->mysql_request( "DELETE FROM filemanager_shares WHERE id='$id'" );
         if( $delete ) {
             return true;
@@ -1609,10 +1608,10 @@ class filemanager_core extends Services_JSON
     }
     public function download_share_file( $id )
     {
-        $id = (int) mysql_real_escape_string( $id );
+        $id = (int) $this->quote( $id );
         $select = $this->mysql_request( "SELECT file_path FROM filemanager_shares WHERE id='$id'" );
         if( $select ) {
-            $row = mysql_fetch_array( $select, MYSQL_ASSOC );
+            $row = $select->fetchAll();
             $file = $this->decode_me( $row["file_path"] );
             if( is_file( $file ) ) {
                 header('Content-Description: File Transfer');
@@ -1813,12 +1812,12 @@ class filemanager_core extends Services_JSON
         $key = $this->encode_me($key);
         $id = $this->encode_me($id);
         $select = $this->mysql_request("SELECT id, dir_path, username, activation_key FROM filemanager_users WHERE MD5(id)='$id' AND activation_key='$key'");
-        $num = mysql_num_rows($select);
+        $num = $select->rowCount();
         if($num <= 0)
         {
             return null;
         }
-        while($row = mysql_fetch_array($select))
+        while($row = $select->fetchAll())
         {
             if($row["activation_key"] == $key and md5($row["id"]) == $id)
             {
@@ -2190,11 +2189,10 @@ class filemanager extends Services_JSON
     }
     public function get_support_ext()
     {
-        mysql_connect( DB_HOST, DB_USER, DB_PASS );
-        mysql_select_db( DB_NAME );
+        $db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8', DB_USER, DB_PASS);
         $content = array();
-        $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='allow_extensions'");
-        while($row = mysql_fetch_array( $select ) )
+        $select = $db->query("SELECT * FROM filemanager_options WHERE option_name='allow_extensions'");
+        while($row = $select->fetchAll() )
         {
             if($row["option_name"] == "allow_extensions")
             {
