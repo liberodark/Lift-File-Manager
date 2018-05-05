@@ -4,8 +4,8 @@
  */
 define("DB_HOST", "localhost"); // Address of your mysql server
 define("DB_USER", "root"); // User of your mysql server
-define("DB_PASS", ""); // Password of your user on mysql server
-define("DB_NAME", "filemanager_v3"); // Your database name that you created on your mysql server
+define("DB_PASS", "Romain.mysql"); // Password of your user on mysql server
+define("DB_NAME", "my_yurfile"); // Your database name that you created on your mysql server
 
 
 /*
@@ -38,6 +38,8 @@ define( 'SMTPFromSMTPUsername', false );
  * Directory Settings
  */
 define("ROOT_DIR_PATH", "./"); // Root directory path # "/" in end of path is required
+
+define("ROOT_UPLOAD_PATH", "./upload/");
 
 
 /* V2.0.0 => V3.0.0 OR Change root and set it with users and share files*/
