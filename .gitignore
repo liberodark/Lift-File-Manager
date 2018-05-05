@@ -3,3 +3,4 @@ logs/
 filemanager_error_log.txt
 /filemanager_config.php
 .idea/
+upload/
