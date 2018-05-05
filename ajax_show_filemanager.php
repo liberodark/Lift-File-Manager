@@ -49,8 +49,6 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) AND strtolower($_SERVER['HTTP_X_REQ
                     $search = $_POST["search"];
                 }
 
-
-
                 $filemanager = new filemanager( $path, $sort_with, $search );
                 $navigation_url = str_replace("ajax_show_filemanager.php", "navigate.php", $filemanager->curPageURL());
                 $download_url = str_replace("ajax_show_filemanager.php", "download.php", $filemanager->curPageURL());

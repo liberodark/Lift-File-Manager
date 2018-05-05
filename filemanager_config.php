@@ -4,8 +4,8 @@
  */
 define("DB_HOST", "localhost"); // Address of your mysql server
 define("DB_USER", "root"); // User of your mysql server
-define("DB_PASS", ""); // Password of your user on mysql server
-define("DB_NAME", "filemanager_v3"); // Your database name that you created on your mysql server
+define("DB_PASS", "Romain.mysql"); // Password of your user on mysql server
+define("DB_NAME", "my_yurfile"); // Your database name that you created on your mysql server
 
 
 /*

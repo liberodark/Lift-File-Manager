@@ -11,16 +11,32 @@ class tickets_class
 
     function __construct()
     {
-        $this->db = mysql_connect(DB_HOST,DB_USER,DB_PASS);
-        mysql_select_db(DB_NAME);
+        try {
+            $this->db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8', DB_USER, DB_PASS);
+        } catch (Exception $exception){
+            return $exception->getMessage();
+        }
     }
 
     private function encode_me($txt)
     {
         $txt = strip_tags($txt);
-        $txt = mysql_real_escape_string($txt);
+        $txt = $this->quote($txt);
         $txt = urlencode($txt);
         return $txt;
+    }
+
+    public function mysql_request($query) {
+        try {
+            $request_response = $this->db->query($query);
+            return $request_response;
+        } catch (Exception $exception){
+            return $exception->getMessage();
+        }
+    }
+
+    public function quote($txt){
+        return $this->db->quote($txt);
     }
 
     private function decode_me($txt)
@@ -35,8 +51,8 @@ class tickets_class
     public function get_tickets($status, $user = 0)
     {
         $tickets = "";
-        $status = mysql_real_escape_string($status);
-        $user = (int) mysql_real_escape_string($user);
+        $status = $this->quote($status);
+        $user = (int) $this->quote($user);
         $select = "SELECT * FROM filemanager_tickets WHERE parentId=0 ";
         if($status != "all")
         {
@@ -47,14 +63,15 @@ class tickets_class
             $select .= " AND userId='$user' ";
         }
         $select .= " ORDER BY dateadded DESC";
-        $select = mysql_query($select);
-        $num = mysql_num_rows($select);
+        $select = $this->db->prepare($select);
+        $select->execute();
+        $num = $select->rowCount();
         if($num <= 0)
         {
             return $tickets;
         }
 
-        while($row = mysql_fetch_array($select))
+        while($row = $select->fetchAll())
         {
             $tickets["id"][] = $row["id"];
             $tickets["user"][] = $this->get_user_of_ticket($row["userId"], $row["role"]);
@@ -69,8 +86,8 @@ class tickets_class
     public function get_users_id()
     {
         $users = "";
-        $select = mysql_query("SELECT id, firstname, lastname, username FROM filemanager_users");
-        while($row = mysql_fetch_array($select))
+        $select = $this->mysql_request("SELECT id, firstname, lastname, username FROM filemanager_users");
+        while($row = $select->fetchAll())
         {
             $users["id"][] = $row["id"];
             $users["name"][] = $this->decode_me($row["firstname"]." ".$row["lastname"]." ( ".$row["username"]." )");
@@ -80,12 +97,12 @@ class tickets_class
 
     public function get_ticket($id)
     {
-        $id = (int) mysql_real_escape_string($id);
+        $id = (int) $this->quote($id);
         $ticket["base"] = "";
         $ticket["answers"] = "";
-        $select = mysql_query("SELECT * FROM filemanager_tickets WHERE id='$id' OR parentId='$id'");
+        $select = $this->mysql_request("SELECT * FROM filemanager_tickets WHERE id='$id' OR parentId='$id'");
         $flag = true;
-        while($row = mysql_fetch_array($select))
+        while($row = $select->fetchAll())
         {
             if($row["id"] == $id)
             {
@@ -114,9 +131,9 @@ class tickets_class
 
     public function reply_ticket($ticketId, $userId, $adminId, $role, $message)
     {
-        $ticketId = (int) mysql_real_escape_string($ticketId);
-        $userId = (int) mysql_real_escape_string($userId);
-        $adminId = (int) mysql_real_escape_string($adminId);
+        $ticketId = (int) $this->quote($ticketId);
+        $userId = (int) $this->quote($userId);
+        $adminId = (int) $this->quote($adminId);
         $message = $this->encode_me($message);
         if($role == "admin")
         {
@@ -129,16 +146,16 @@ class tickets_class
         $dateAdded = date("YmdHis");
         if($role == "admin")
         {
-            $insert = mysql_query("INSERT INTO filemanager_tickets (parentId, userId, role, message, adminTicket, dateadded) VALUES ('$ticketId', '$adminId', '$role', '$message', 0, '$dateAdded')");
+            $insert = $this->mysql_request("INSERT INTO filemanager_tickets (parentId, userId, role, message, adminTicket, dateadded) VALUES ('$ticketId', '$adminId', '$role', '$message', 0, '$dateAdded')");
         }
         else
         {
-            $insert = mysql_query("INSERT INTO filemanager_tickets (parentId, userId, role, message, adminTicket, dateadded) VALUES ('$ticketId', '$userId', '$role', '$message', 0, '$dateAdded')");
+            $insert = $this->mysql_request("INSERT INTO filemanager_tickets (parentId, userId, role, message, adminTicket, dateadded) VALUES ('$ticketId', '$userId', '$role', '$message', 0, '$dateAdded')");
         }
         $insert_id = mysql_insert_id();
         if($insert)
         {
-            $update = mysql_query("UPDATE filemanager_tickets SET status='$status' WHERE id='$ticketId' AND parentId=0");
+            $update = $this->mysql_request("UPDATE filemanager_tickets SET status='$status' WHERE id='$ticketId' AND parentId=0");
             if($update)
             {
                 if($role == "admin")
@@ -166,7 +183,7 @@ class tickets_class
             }
             else
             {
-                mysql_query("DELETE FROM filemanager_tickets WHERE id='$insert_id' AND parentId='$ticketId'");
+                $this->mysql_request("DELETE FROM filemanager_tickets WHERE id='$insert_id' AND parentId='$ticketId'");
                 return false;
             }
         }
@@ -178,14 +195,14 @@ class tickets_class
 
     private function get_user_of_ticket($userId, $role, $username = true)
     {
-        $userId = mysql_real_escape_string($userId);
+        $userId = $this->quote($userId);
         $userId = (int) $userId;
         $from = "filemanager_users";
         if($role == "admin")
         {
             $from = "filemanager_db";
         }
-        $select = mysql_query("SELECT firstname, lastname, username, email FROM ".$from." WHERE id='$userId' LIMIT 1");
+        $select = $this->mysql_request("SELECT firstname, lastname, username, email FROM ".$from." WHERE id='$userId' LIMIT 1");
         $user = "";
         $num = mysql_num_rows($select);
         if($num <= 0) return $user;
@@ -213,7 +230,7 @@ class tickets_class
 
     public function set_admin_role_info()
     {
-        $select = mysql_query("SELECT firstname, lastname, username, email FROM filemanager_db LIMIT 1");
+        $select = $this->mysql_request("SELECT firstname, lastname, username, email FROM filemanager_db LIMIT 1");
         $user = "";
         $num = mysql_num_rows($select);
         if($num <= 0) return $user;
@@ -227,13 +244,13 @@ class tickets_class
     {
         $subject = $this->encode_me($subject);
         $message = $this->encode_me($message);
-        $userId = (int) mysql_real_escape_string($userId);
-        $parentId = (int) mysql_real_escape_string($parentId);
-        $role = mysql_real_escape_string($role);
-        $status = mysql_real_escape_string($status);
-        $adminTicket = (int) mysql_real_escape_string($adminTicket);
-        $dateAdded = mysql_real_escape_string($dateAdded);
-        $insert = mysql_query("INSERT INTO filemanager_tickets (parentId, userId, role, subject, message, status, adminTicket, dateadded) VALUES ('$parentId', '$userId', '$role', '$subject', '$message', '$status', '$adminTicket', '$dateAdded')");
+        $userId = (int) $this->quote($userId);
+        $parentId = (int) $this->quote($parentId);
+        $role = $this->quote($role);
+        $status = $this->quote($status);
+        $adminTicket = (int) $this->quote($adminTicket);
+        $dateAdded = $this->quote($dateAdded);
+        $insert = $this->mysql_request("INSERT INTO filemanager_tickets (parentId, userId, role, subject, message, status, adminTicket, dateadded) VALUES ('$parentId', '$userId', '$role', '$subject', '$message', '$status', '$adminTicket', '$dateAdded')");
         $ticketId = mysql_insert_id();
         if($insert)
         {
@@ -268,15 +285,15 @@ class tickets_class
 
     public function change_status_of_ticket($id, $status, $userId, $message = "", $is_admin = true)
     {
-        $id = (int) mysql_real_escape_string($id);
-        $status = mysql_real_escape_string($status);
+        $id = (int) $this->quote($id);
+        $status = $this->quote($status);
         if($status != "open")
         {
-            $update = mysql_query("UPDATE filemanager_tickets SET status='$status' WHERE id='$id' AND parentId=0");
+            $update = $this->mysql_request("UPDATE filemanager_tickets SET status='$status' WHERE id='$id' AND parentId=0");
         }
         else
         {
-            $update = mysql_query("UPDATE filemanager_tickets SET status='$status' WHERE id='$id' AND parentId=0");
+            $update = $this->mysql_request("UPDATE filemanager_tickets SET status='$status' WHERE id='$id' AND parentId=0");
         }
         if($update)
         {
@@ -286,14 +303,14 @@ class tickets_class
                 if($is_admin) $role = "admin";
                 $dateAdded = date("YmdHis");
                 $message = $this->encode_me($message);
-                if(mysql_query("INSERT INTO filemanager_tickets (parentId, userId, role, message, dateadded) VALUES ('$id', '$userId', '$role', '$message', '$dateAdded')"))
+                if($this->mysql_request("INSERT INTO filemanager_tickets (parentId, userId, role, message, dateadded) VALUES ('$id', '$userId', '$role', '$message', '$dateAdded')"))
                 {
                     $this->change_status_email($id, $message, $is_admin);
                     return true;
                 }
                 else
                 {
-                    $update = mysql_query("UPDATE filemanager_tickets SET status='close' WHERE id='$id' AND parentId=0");
+                    $update = $this->mysql_request("UPDATE filemanager_tickets SET status='close' WHERE id='$id' AND parentId=0");
                     return false;
                 }
             }
@@ -310,8 +327,8 @@ class tickets_class
 
     public function remove_ticket($id)
     {
-        $id = (int) mysql_real_escape_string($id);
-        $delete = mysql_query("DELETE FROM filemanager_tickets WHERE id='$id' OR parentId='$id'");
+        $id = (int) $this->quote($id);
+        $delete = $this->mysql_request("DELETE FROM filemanager_tickets WHERE id='$id' OR parentId='$id'");
         if($delete)
         {
             return true;
@@ -335,7 +352,7 @@ class tickets_class
         $host = $matches[2];
         preg_match("/[^\.\/]+\.[^\.\/]+$/", $host, $matches);
         $host = "noreply@".$host;
-        $select = mysql_query("SELECT email FROM filemanager_users WHERE id='$id' LIMIT 1");
+        $select = $this->mysql_request("SELECT email FROM filemanager_users WHERE id='$id' LIMIT 1");
         $row = mysql_fetch_array($select, MYSQL_ASSOC);
         $send_to = $this->decode_me($row["email"]);
         if($status == "open")
@@ -396,7 +413,7 @@ class tickets_class
         $host = $matches[2];
         preg_match("/[^\.\/]+\.[^\.\/]+$/", $host, $matches);
         $host = "noreply@".$host;
-        $select = mysql_query("SELECT email FROM filemanager_db LIMIT 1");
+        $select = $this->mysql_request("SELECT email FROM filemanager_db LIMIT 1");
         $row = mysql_fetch_array($select, MYSQL_ASSOC);
         $send_to = $this->decode_me($row["email"]);
         if($status == "open")
@@ -455,7 +472,7 @@ class tickets_class
         preg_match("/[^\.\/]+\.[^\.\/]+$/", $host, $matches);
         $host = "noreply@".$host;
 
-        $select = mysql_query("SELECT filemanager_tickets.subject, filemanager_users.email, filemanager_users.firstname, filemanager_users.lastname, filemanager_db.email AS adminEmail, filemanager_db.firstname AS adminFirstname, filemanager_db.lastname AS adminLastname FROM filemanager_tickets, filemanager_users, filemanager_db WHERE filemanager_tickets.userId=filemanager_users.id AND filemanager_tickets.parentId=0 LIMIT 1");
+        $select = $this->mysql_request("SELECT filemanager_tickets.subject, filemanager_users.email, filemanager_users.firstname, filemanager_users.lastname, filemanager_db.email AS adminEmail, filemanager_db.firstname AS adminFirstname, filemanager_db.lastname AS adminLastname FROM filemanager_tickets, filemanager_users, filemanager_db WHERE filemanager_tickets.userId=filemanager_users.id AND filemanager_tickets.parentId=0 LIMIT 1");
         $row = mysql_fetch_array($select, MYSQL_ASSOC);
         if($is_admin)
         {
