@@ -20,11 +20,11 @@ if ($core->isLogin())
             var logout = alert("<?php language_filter("Logout_Error");?>");
             if(logout)
             {
-                window.location.href = ".";
+//                window.location.href = ".";
             }
             else
             {
-                window.location.href = ".";
+//                window.location.href = ".";
             }
         </script>
         <?php

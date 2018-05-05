@@ -1369,6 +1369,7 @@ if ( $core->isLogin() and isset( $load_modals ) ) {
                 },
                 function(data,status)
                 {
+                    console.log(data)
                     if(status == "success")
                     {
                         if(data == "true")
@@ -1504,13 +1505,13 @@ if ( $core->isLogin() and isset( $load_modals ) ) {
         }
         if(is_move == true)
         {
-            /*is_move = false;
-            var check = name.indexOf("/");
-            if(check == -1)
-            {
-                alert("<?php //language_filter("Please write new folder/file path.", false, true)?>");
-                return false;
-            }*/
+//            is_move = false;
+//            var check = name.indexOf("/");
+//            if(check == -1)
+//            {
+//                alert("<?php ////language_filter("Please write new folder/file path.", false, true)?>//");
+//                return false;
+//            }
         }
         var check = name.indexOf("'");
         if(check != -1)

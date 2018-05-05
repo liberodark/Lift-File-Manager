@@ -1,3 +1,4 @@
+
 <?php
 if (!isset($core))
 {
@@ -159,7 +160,7 @@ if ($core->isLogin())
 
         if(isset($_POST["create_zip"]))
         {
-            $dir = ROOT_DIR_PATH.$_POST["this_place"]."/";
+            $dir = ROOT_DIR_PATH.$_POST["this_place"];
             $zip_name = $_POST["zip_name"];
             $realName = $zip_name; // for check backup name
 
@@ -175,6 +176,7 @@ if ($core->isLogin())
             }
 
             $zip_name = $dir.$zip_name;
+            echo $zip_name;
             $files_folders = $_POST["create_zip"];
             if($core->check_base_root($zip_name))
             {

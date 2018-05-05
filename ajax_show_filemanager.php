@@ -17,7 +17,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) AND strtolower($_SERVER['HTTP_X_REQ
             if ($_POST["showFilemanager"] == $core->admin_id)
             {
                 $this_dir = $_POST["my_dir_path"];
-                $path = ROOT_DIR_PATH.$this_dir;
+                $path = ROOT_UPLOAD_PATH.$this_dir;
                 $path = str_replace( "//", "/", $path );
                 if(isset($_POST["sort_type"]))
                 {
@@ -52,7 +52,7 @@ if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) AND strtolower($_SERVER['HTTP_X_REQ
                 $filemanager = new filemanager( $path, $sort_with, $search );
                 $navigation_url = str_replace("ajax_show_filemanager.php", "navigate.php", $filemanager->curPageURL());
                 $download_url = str_replace("ajax_show_filemanager.php", "download.php", $filemanager->curPageURL());
-                $fullCount = count($filemanager->show_files_folders);
+                $fullCount = ($filemanager->show_files_folders) ? count($filemanager->show_files_folders) : 0;
                 $core->page($page, $fullCount, $countShow);
                 $load_modals = true;
                 $download_link = $option->get_option( "settings" );

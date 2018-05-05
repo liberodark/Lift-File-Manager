@@ -9,7 +9,7 @@ if ($core->isLogin())
 {
     if(isset($_GET['operation']) and $core->role == "admin" ) {
 
-        $fs = new fs( ROOT_DIR_PATH );
+        $fs = new fs( ROOT_UPLOAD_PATH );
         try {
             $rslt = null;
             switch($_GET['operation']) {
