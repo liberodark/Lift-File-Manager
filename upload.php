@@ -25,7 +25,7 @@ if ($core->isLogin())
 {
 	if(isset($_POST["uploadDir"]) and isset($_FILES['file']))
 	{
-        $_POST["uploadDir"] = ROOT_UPLOAD_PATH.$_POST["uploadDir"]."/";
+        $_POST["uploadDir"] = str_replace( "//", "/", ROOT_UPLOAD_PATH.$_POST["uploadDir"]."/");
         $ret["status"] = 'Error';
         $ret["msg"] = "";
         if($core->check_base_root($_POST["uploadDir"]))
@@ -144,7 +144,7 @@ if ($core->isLogin())
         }
 	}
     else if(isset($_POST["uploadDir"]) and isset($_FILES['datafile'])) {
-        $_POST["uploadDir"] = ROOT_UPLOAD_PATH.$_POST["uploadDir"]."/";
+        $_POST["uploadDir"] = str_replace( "//", "/", ROOT_UPLOAD_PATH.$_POST["uploadDir"]."/");
         if($core->check_base_root($_POST["uploadDir"]))
         {
             $allowedExts = $core->get_allow_uploads();
