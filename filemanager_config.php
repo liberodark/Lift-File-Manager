@@ -37,7 +37,7 @@ define( 'SMTPFromSMTPUsername', false );
 /*
  * Directory Settings
  */
-define("ROOT_DIR_PATH", "./"); // Root directory path # "/" in end of path is required
+define("ROOT_DIR_PATH", "./upload/"); // Root directory path # "/" in end of path is required
 
 define("ROOT_UPLOAD_PATH", "./upload/");
 
