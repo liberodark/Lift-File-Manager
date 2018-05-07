@@ -185,7 +185,7 @@ class filemanager_user_core extends Services_JSON
         $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='$name'");
         while($row = $select->fetchAll())
         {
-            $content = $this->decode($row["option_content"]);
+            $content = json_decode($row["option_content"]);
         }
         return $content;
     }
@@ -539,7 +539,7 @@ class filemanager_user_core extends Services_JSON
         {
             if($row["option_name"] == "allow_uploads_mime_type")
             {
-                $content = $this->decode($row["option_content"]);
+                $content = json_decode($row["option_content"]);
             }
         }
 

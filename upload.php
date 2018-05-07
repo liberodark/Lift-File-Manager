@@ -131,7 +131,7 @@ if ($core->isLogin())
             {
                 $ret["msg"] = language_filter("Invalid_file", true);
             }
-            echo $core->_encode( $ret );
+            echo json_encode( $ret );
             die();
         }
         else
@@ -139,7 +139,7 @@ if ($core->isLogin())
             $custom_error = array();
             $custom_error['status'] = "error";
             $custom_error['msg'] = language_filter("Can not upload", true);
-            echo $core->_encode($custom_error);
+            echo json_encode($custom_error);
             die();
         }
 	}
@@ -261,7 +261,7 @@ if ($core->isLogin())
         $custom_error = array();
         $custom_error['status'] = "error";
         $custom_error['msg'] = language_filter("Can not upload", true);
-        echo $core->_encode($custom_error);
+        echo json_encode($custom_error);
         die();
     }
 }
