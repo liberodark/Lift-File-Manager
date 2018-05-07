@@ -102,14 +102,14 @@ class INSTALL extends Services_JSON
                     {
                         $name = "allow_extensions";
                         $content = array('rar','zip','txt','pdf','jpg','jpeg','png','gif','bmp','psd','flv','mp4');
-                        $content = $this->_encode($content);
+                        $content = json_encode($content);
                         $insert_options = "INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name' , '$content')";
                         if($this->mysql_request($insert_options))
                         {
 
                             $name = "allow_uploads";
                             $content =  array("gif", "jpeg", "jpg", "png", "txt", "zip", "rar", "psd", "flv");
-                            $content = $this->_encode($content);
+                            $content = json_encode($content);
                             $insert_options = "INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name' , '$content')";
                             if($this->mysql_request($insert_options))
                             {
@@ -140,7 +140,7 @@ class INSTALL extends Services_JSON
                                 );
 
                                 $name = "allow_uploads_mime_type";
-                                $content = $this->_encode($mime_type);
+                                $content = json_encode($mime_type);
                                 $insert_options = "INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name' , '$content')";
                                 if($this->mysql_request($insert_options))
                                 {
@@ -175,7 +175,7 @@ class INSTALL extends Services_JSON
                                                 'admin_notification' => 'off',
                                                 'user_notification' => 'off'
                                             );
-                                            $content = $this->_encode($content);
+                                            $content = json_encode($content);
                                             $insert_options = "INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name' , '$content')";
                                             if($this->mysql_request($insert_options))
                                             {
@@ -188,7 +188,7 @@ class INSTALL extends Services_JSON
                                                     'size_limitation' => 5,
                                                     'users_dir' => ''
                                                 );
-                                                $content = $this->_encode($content);
+                                                $content = json_encode($content);
                                                 $insert_options = "INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name' , '$content')";
                                                 if($this->mysql_request($insert_options))
                                                 {

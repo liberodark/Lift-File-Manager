@@ -6,9 +6,8 @@ ini_set('html_errors', TRUE);
 ini_set('error_log', 'filemanager_error_log.txt');
 ini_set('display_errors', TRUE);
 include 'filemanager_config.php';
-require_once 'filemanager_assets/JSON.php';
 
-class filemanager_core extends Services_JSON
+class filemanager_core
 {
     var $db;
     public $admin_firstname = "";
@@ -579,7 +578,7 @@ class filemanager_core extends Services_JSON
         $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='allow_uploads'");
         while ($row = $select->fetchAll()) {
             if ($row["0"]["option_name"] == "allow_uploads") {
-                $content = $this->decode($row["0"]["option_content"]);
+                $content = json_decode($row["0"]["option_content"]);
             }
         }
         return $content;
@@ -591,7 +590,7 @@ class filemanager_core extends Services_JSON
         $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='allow_uploads_mime_type'");
         while ($row = $select->fetchAll()) {
             if ($row["0"]["option_name"] == "allow_uploads_mime_type") {
-                $content = $this->decode($row["0"]["option_content"]);
+                $content = json_decode($row["0"]["option_content"]);
             }
         }
         return $content;
@@ -1245,7 +1244,7 @@ class filemanager_core extends Services_JSON
         $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='allow_extensions'");
         while ($row = $select->fetchAll()) {
             if ($row["0"]["option_name"] == "allow_extensions") {
-                $content = $this->decode($row["0"]["option_content"]);
+                $content = json_decode($row["0"]["option_content"]);
             }
         }
         return $content;
@@ -1610,7 +1609,7 @@ class filemanager_core extends Services_JSON
     }
 }
 
-class filemanager extends Services_JSON
+class filemanager
 {
     public $support_ext;
     public $ignored;
@@ -1665,7 +1664,7 @@ class filemanager extends Services_JSON
 
         while ($row = $query->fetchAll()) {
             if ($row["0"]["option_name"] == "allow_extensions") {
-                $content = $this->decode($row["0"]["option_content"]);
+                $content = json_decode($row["0"]["option_content"]);
             }
         }
         return $content;

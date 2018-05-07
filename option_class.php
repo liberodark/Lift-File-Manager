@@ -7,7 +7,7 @@ class option_class extends filemanager_core
         $content = array();
         $select = $this->mysql_request("SELECT * FROM filemanager_options WHERE option_name='$name'");
         while ($row = $select->fetch()) {
-            $content = $this->decode($row["option_content"]);
+            $content = json_decode($row["option_content"]);
         }
         return $content;
     }
@@ -17,7 +17,7 @@ class option_class extends filemanager_core
         if ($this->add_option($name, $content)) {
             return true;
         } else {
-            $content = $this->_encode($content);
+            $content = json_encode($content);
             $update = $this->mysql_request("UPDATE filemanager_options SET option_content='$content' WHERE option_name='$name'");
             if ($update) {
                 return true;
@@ -32,7 +32,7 @@ class option_class extends filemanager_core
         if ($this->exists_option($name)) {
             return false;
         } else {
-            $content = $this->_encode($content);
+            $content = json_encode($content);
             $insert = $this->mysql_request("INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name', '$content')");
             if ($insert) {
                 return true;

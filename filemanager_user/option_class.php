@@ -8,7 +8,7 @@ class option_class extends filemanager_user_core
         $select = mysql_query("SELECT * FROM filemanager_options WHERE option_name='$name'");
         while($row = mysql_fetch_array($select))
         {
-            $content = $this->decode($row["option_content"]);
+            $content = json_decode($row["option_content"]);
         }
         return $content;
     }
@@ -21,7 +21,7 @@ class option_class extends filemanager_user_core
         }
         else
         {
-            $content = $this->_encode($content);
+            $content = json_encode($content);
             $update = mysql_query("UPDATE filemanager_options SET option_content='$content' WHERE option_name='$name'");
             if($update)
             {
@@ -42,7 +42,7 @@ class option_class extends filemanager_user_core
         }
         else
         {
-            $content = $this->_encode($content);
+            $content = json_encode($content);
             $insert = mysql_query("INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name', '$content')");
             if($insert)
             {

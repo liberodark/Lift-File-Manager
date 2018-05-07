@@ -143,14 +143,14 @@ if ($core->isLogin())
             {
                 echo $ret["msg"] = language_filter("Invalid file", true).': '.$_FILES["datafile"]["name"];
             }
-            echo $core->_encode( $ret );
+            echo json_encode( $ret );
             die();
         }
         else {
             $custom_error = array();
             $custom_error['status'] = "error";
             $custom_error['msg'] = language_filter("Can not upload", true);
-            echo $core->_encode($custom_error);
+            echo json_encode($custom_error);
             die();
         }
 	}
