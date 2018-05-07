@@ -10,10 +10,45 @@ class UPDATE_V_3_0_0 extends Services_JSON
     var $install_flag = false;
     function __construct()
     {
-        $this->db = mysql_connect(DB_HOST,DB_USER,DB_PASS);
-        mysql_select_db(DB_NAME);
+        try {
+            $this->db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8', DB_USER, DB_PASS);
+        } catch (Exception $exception){
+            return $exception->getMessage();
+        }
     }
 
+    public function mysql_request($query) {
+        try {
+            $request_response = $this->db->query($query);
+            return $request_response;
+        } catch (Exception $exception){
+            return $exception->getMessage();
+        }
+    }
+
+    public function quote($txt){
+        return $this->db->quote($txt);
+    }
+
+    protected function encode_me($txt)
+    {
+        $txt = strip_tags($txt);
+        $txt = $this->quote($txt);
+        $txt = urlencode($txt);
+        return $txt;
+    }
+
+    protected function decode_me($txt, $share = false)
+    {
+        $txt = urldecode($txt);
+        if( $share ) {
+            $txt = str_replace("\\n", "<br />", $txt);
+            $txt = str_replace("\\r", "       ", $txt);
+        }
+        $txt = stripslashes($txt);
+        return $txt;
+    }
+    
     public function update()
     {
         $table_query = "CREATE TABLE IF NOT EXISTS filemanager_extra_dir(
@@ -25,7 +60,7 @@ class UPDATE_V_3_0_0 extends Services_JSON
             ON UPDATE CASCADE
             ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;";
-        if( mysql_query( $table_query ) ) {
+        if( $this->mysql_request( $table_query ) ) {
             $table_query = "CREATE TABLE IF NOT EXISTS filemanager_shares(
             id INT NOT NULL AUTO_INCREMENT,
             PRIMARY KEY(id),
@@ -42,7 +77,7 @@ class UPDATE_V_3_0_0 extends Services_JSON
             ON UPDATE CASCADE
             ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;";
-            if( mysql_query( $table_query ) ) {
+            if( $this->mysql_request( $table_query ) ) {
                 if(!$this->install_flag)
                 {
                     require_once 'set_users_and_share_root.php';

@@ -7,9 +7,44 @@ class INSTALL extends Services_JSON
     public $status = false;
 	function __construct()
 	{
-		$this->db = mysql_connect(DB_HOST,DB_USER,DB_PASS);
-		mysql_select_db(DB_NAME);
+        try {
+            $this->db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8', DB_USER, DB_PASS);
+        } catch (Exception $exception){
+            return $exception->getMessage();
+        }
 	}
+
+    public function mysql_request($query) {
+        try {
+            $request_response = $this->db->query($query);
+            return $request_response;
+        } catch (Exception $exception){
+            return $exception->getMessage();
+        }
+    }
+
+    public function quote($txt){
+        return $this->db->quote($txt);
+    }
+
+    protected function encode_me($txt)
+    {
+        $txt = strip_tags($txt);
+        $txt = $this->quote($txt);
+        $txt = urlencode($txt);
+        return $txt;
+    }
+
+    protected function decode_me($txt, $share = false)
+    {
+        $txt = urldecode($txt);
+        if( $share ) {
+            $txt = str_replace("\\n", "<br />", $txt);
+            $txt = str_replace("\\r", "       ", $txt);
+        }
+        $txt = stripslashes($txt);
+        return $txt;
+    }
 
 	public function _install($firstname,$lastname,$username,$email,$password)
 	{
@@ -27,7 +62,7 @@ class INSTALL extends Services_JSON
 				  luck_count TINYINT,
 				  date_added DATETIME
 				  ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;";
-		if(mysql_query($table_query))
+        if($this->mysql_request($table_query))
 		{
 			$date_added = date("YmdHis");
 			$is_login = 0;
@@ -36,7 +71,7 @@ class INSTALL extends Services_JSON
             $email_poasword = $password;
 			$password = md5($password);
 			$insert_query = "INSERT INTO filemanager_db (firstname,lastname,username,email,password,is_login,date_added) VALUES ('$firstname','$lastname','$username','$email','$password','$is_login','$date_added')";
-			if(mysql_query($insert_query))
+			if($this->mysql_request($insert_query))
 			{
                 $table_query = "CREATE TABLE IF NOT EXISTS filemanager_options(
 				  id INT NOT NULL AUTO_INCREMENT,
@@ -44,7 +79,7 @@ class INSTALL extends Services_JSON
 				  option_name VARCHAR(30),
 				  option_content TEXT
 				  ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;"; // UPDATE V1.0.1
-                if(mysql_query($table_query))
+                if($this->mysql_request($table_query))
                 {
                     $table_query = "CREATE TABLE IF NOT EXISTS filemanager_users(
                               id INT NOT NULL AUTO_INCREMENT,
@@ -63,20 +98,20 @@ class INSTALL extends Services_JSON
                               dir_path TEXT,
                               date_added DATETIME
 				          ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;";// UPDATE V1.0.1
-                    if(mysql_query($table_query))
+                    if($this->mysql_request($table_query))
                     {
                         $name = "allow_extensions";
                         $content = array('rar','zip','txt','pdf','jpg','jpeg','png','gif','bmp','psd','flv','mp4');
                         $content = $this->_encode($content);
                         $insert_options = "INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name' , '$content')";
-                        if(mysql_query($insert_options))
+                        if($this->mysql_request($insert_options))
                         {
 
                             $name = "allow_uploads";
                             $content =  array("gif", "jpeg", "jpg", "png", "txt", "zip", "rar", "psd", "flv");
                             $content = $this->_encode($content);
                             $insert_options = "INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name' , '$content')";
-                            if(mysql_query($insert_options))
+                            if($this->mysql_request($insert_options))
                             {
                                 /*
                                 * Mime type of upload extensions
@@ -107,14 +142,14 @@ class INSTALL extends Services_JSON
                                 $name = "allow_uploads_mime_type";
                                 $content = $this->_encode($mime_type);
                                 $insert_options = "INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name' , '$content')";
-                                if(mysql_query($insert_options))
+                                if($this->mysql_request($insert_options))
                                 {
                                     $core_folder = ROOT_DIR_PATH;
                                     $core_folder = realpath($core_folder);
                                     $name = "base_root_folder";
                                     $core_folder = base64_encode($core_folder);
                                     $insert_options = "INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name' , '$core_folder')";
-                                    if(mysql_query($insert_options))
+                                    if($this->mysql_request($insert_options))
                                     {
                                         $ticket_table = "CREATE TABLE IF NOT EXISTS filemanager_tickets (
                                             id INT NOT NULL AUTO_INCREMENT,
@@ -128,7 +163,7 @@ class INSTALL extends Services_JSON
                                             adminTicket SMALLINT,
                                             dateadded DATETIME
                                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;";
-                                        if(mysql_query($ticket_table))
+                                        if($this->mysql_request($ticket_table))
                                         {
                                             $name = "settings";
                                             $content = array(
@@ -142,7 +177,7 @@ class INSTALL extends Services_JSON
                                             );
                                             $content = $this->_encode($content);
                                             $insert_options = "INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name' , '$content')";
-                                            if(mysql_query($insert_options))
+                                            if($this->mysql_request($insert_options))
                                             {
                                                 $name = "register_settings";
                                                 $content = array(
@@ -155,7 +190,7 @@ class INSTALL extends Services_JSON
                                                 );
                                                 $content = $this->_encode($content);
                                                 $insert_options = "INSERT INTO filemanager_options (option_name, option_content) VALUES ('$name' , '$content')";
-                                                if(mysql_query($insert_options))
+                                                if($this->mysql_request($insert_options))
                                                 {
                                                     $email = urldecode($email);
                                                     $username = urldecode($username);
