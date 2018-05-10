@@ -181,16 +181,16 @@ if ($core->isLogin()) {
             $errors = "";
             if ($core->check_base_root($dir)) {
                 foreach ($files_and_folders as $value) {
-                    $filename = "/" . basename($value);
+                    $filename = ROOT_UPLOAD_PATH."/" . basename($value);
                     if (is_dir($dir . $filename)) {
                         if (!$core->recursiveDelete($dir . $filename)) {
                             $flag = false;
                             $errors[] = $filename;
                         }
                     }
-
-                    if (is_file($dir . $filename)) {
-                        if (!@unlink($dir . $filename)) {
+					$filename = $value;
+                    if (is_file($filename)) {
+                        if (!@unlink($filename)) {
                             $flag = false;
                             $errors[] = $filename;
                         }
