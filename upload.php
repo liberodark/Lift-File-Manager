@@ -25,7 +25,6 @@ if ($core->isLogin())
 {
 	if(isset($_POST["uploadDir"]) and isset($_FILES['file']))
 	{
-        $_POST["uploadDir"] = ROOT_UPLOAD_PATH.$_POST["uploadDir"]."/";
         $ret["status"] = 'Error';
         $ret["msg"] = "";
         if($core->check_base_root($_POST["uploadDir"]))
